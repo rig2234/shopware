@@ -1,0 +1,42 @@
+# ideal para monorepos con subcarpetas backend y frontend
+
+# Dependencias de Node en cualquier nivel
+**/node_modules/
+
+# Archivos de entorno y secretos (¡CRÍTICO PARA TU .ENV EN BACKEND!)
+**/ .env
+**/.env.local
+**/.env.*.local
+*.env
+*.env.local
+
+# Carpeta de producción/compilación de Vue (Vite)
+**/dist/
+**/dist-ssr/
+
+# Logs de errores de Node/NPM
+**/logs/
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/pnpm-debug.log*
+
+# Archivos temporales y de configuración de Prisma
+**/prisma/migrations/**/*.sql
+# Nota: NO ignores backend/prisma/schema.prisma, ese sí debe subirse.
+
+# Carpetas ocultas generadas por agentes de IA en tu proyecto
+**/.agents/
+**/.claude/
+**/.cursor/
+**/.devin/
+
+# Configuraciones del editor de código (VS Code, etc.)
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+
+# Archivos temporales del sistema operativo
+.DS_Store
+Thumbs.db
