@@ -128,15 +128,15 @@ model Pedido {
 }
 
 model DetallePedido {
-  idPedido        Int?           @map("id_pedido")
-  idProducto      Int?           @map("id_producto")
-  idProductoTalla Int?           @map("id_producto_talla")
+  idPedido        Int            @map("id_pedido")
+  idProducto      Int            @map("id_producto")
+  idProductoTalla Int            @map("id_producto_talla")
   cantidad        Int?
   precioUnitario  Decimal?       @map("precio_unitario") @db.Decimal(10, 2)
 
-  pedido          Pedido?        @relation(fields: [idPedido], references: [idPedido], onDelete: Cascade)
-  producto        Producto?      @relation(fields: [idProducto], references: [idProducto], onDelete: Cascade)
-  productoTalla   ProductoTalla? @relation(fields: [idProductoTalla], references: [idProductoTalla], onDelete: Cascade)
+  pedido          Pedido         @relation(fields: [idPedido], references: [idPedido], onDelete: Cascade)
+  producto        Producto       @relation(fields: [idProducto], references: [idProducto], onDelete: Cascade)
+  productoTalla   ProductoTalla  @relation(fields: [idProductoTalla], references: [idProductoTalla], onDelete: Cascade)
 
   @@id([idPedido, idProducto, idProductoTalla])
   @@map("detalle_pedido")

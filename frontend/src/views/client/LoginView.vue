@@ -15,7 +15,7 @@
       </h2>
       <p class="mt-2 text-sm text-gray-400">
         ¿Aún no tienes cuenta?
-        <router-link to="/register" class="font-semibold text-[#D99B6A] hover:underline transition-all ml-1">
+        <router-link to="/registro" class="font-semibold text-[#D99B6A] hover:underline transition-all ml-1">
           Regístrate
         </router-link>
       </p>

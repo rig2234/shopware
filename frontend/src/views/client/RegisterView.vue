@@ -100,6 +100,9 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const form = reactive({
   nombre: '',
@@ -111,18 +114,44 @@ const verPassword = ref(false)
 const loading = ref(false)
 const mensaje = reactive({ texto: '', error: false })
 
-const handleRegister = () => {
+// Endpoint exacto configurado en tu backend (index.js + auth.routes.js)
+const API_URL = 'http://localhost:3000/api/auth/registro'
+
+const handleRegister = async () => {
   loading.value = true
   mensaje.texto = ''
+  mensaje.error = false
 
-  setTimeout(() => {
-    loading.value = false
-    mensaje.error = false
-    mensaje.texto = `¡Registro exitoso! Bienvenido, ${form.nombre}.`
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        nombre: form.nombre,
+        correo: form.correo,
+        contrasena: form.contrasena
+      })
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al registrar el usuario')
+    }
+
+    mensaje.texto = '¡Registro exitoso! Redirigiendo al inicio de sesión...'
     
-    form.nombre = ''
-    form.correo = ''
-    form.contrasena = ''
-  }, 1000)
+    setTimeout(() => {
+      router.push('/login')
+    }, 1500)
+
+  } catch (err) {
+    mensaje.error = true
+    mensaje.texto = err.message || 'No se pudo conectar con el servidor'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
