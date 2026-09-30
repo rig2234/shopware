@@ -1,9 +1,14 @@
 import { Router } from 'express';
-import { registrarUsuario } from '../controllers/auth.controller.js';
+import { 
+  solicitarVerificacion, 
+  confirmarVerificacion, 
+  iniciarSesion 
+} from '../controllers/auth.controller.js';
 
 const router = Router();
 
-// Endpoint para registro: POST /api/auth/registro
-router.post('/registro', registrarUsuario);
+router.post('/registro/solicitar', solicitarVerificacion);
+router.post('/registro/confirmar', confirmarVerificacion);
+router.post('/login', iniciarSesion);
 
 export default router;

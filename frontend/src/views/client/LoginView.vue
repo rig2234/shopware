@@ -88,6 +88,9 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const form = reactive({
   correo: '',
@@ -98,16 +101,48 @@ const verPassword = ref(false)
 const loading = ref(false)
 const mensaje = reactive({ texto: '', error: false })
 
-const handleLogin = () => {
-  loading.value = true
-  mensaje.texto = ''
+const handleLogin = async () => {
+  loading.value = true;
+  mensaje.texto = '';
+  mensaje.error = false;
 
-  setTimeout(() => {
-    loading.value = false
-    mensaje.error = false
-    mensaje.texto = '¡Inicio de sesión exitoso!'
-    
-    // Aquí redirigirías al usuario con Vue Router cuando integres la autenticación
-  }, 1000)
-}
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        correo: form.correo,
+        contrasena: form.contrasena
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al iniciar sesión');
+    }
+
+    // Guardar token JWT y datos en localStorage
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+
+    mensaje.error = false;
+    mensaje.texto = '¡Inicio de sesión exitoso!';
+
+    setTimeout(() => {
+      // Redirigir según el idRol
+      if (data.usuario.idRol === 2) {
+        router.push('/admin/dashboard'); // Redirige al Dashboard de Admin
+      } else {
+        router.push('/tienda'); // Redirige al catálogo de clientes
+      }
+    }, 800);
+
+  } catch (error) {
+    mensaje.error = true;
+    mensaje.texto = error.message;
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
