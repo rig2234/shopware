@@ -143,10 +143,6 @@ export const iniciarSesion = async (req, res) => {
       return res.status(401).json({ message: 'Credenciales incorrectas' });
     }
 
-    console.log('--- DEPURACIÓN LOGIN ---');
-    console.log('Contraseña recibida del frontend:', contrasena);
-    console.log('Hash recuperado de la BD:', usuario.contrasena);
-
     // Validar contraseña
     const esContrasenaValida = await bcrypt.compare(contrasena, usuario.contrasena);
     if (!esContrasenaValida) {
