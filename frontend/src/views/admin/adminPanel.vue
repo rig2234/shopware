@@ -244,7 +244,7 @@
             <h3 class="text-xl font-bold text-white mb-2">Crear Nuevo Producto</h3>
             <p class="text-slate-400 mb-6">Completa los datos del producto</p>
 
-            <form @submit.prevent="crearProducto" class="space-y-6">
+            <form @submit.prevent="crearProducto" class="space-y-6" enctype="multipart/form-data">
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label class="block text-sm font-semibold text-slate-300 mb-2">Nombre</label>
@@ -252,7 +252,7 @@
                     v-model="nuevoProducto.nombre"
                     type="text"
                     placeholder="Ej: Camiseta Azul"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                     required
                   />
                 </div>
@@ -263,7 +263,7 @@
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                     required
                   />
                 </div>
@@ -281,13 +281,16 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-slate-300 mb-2">Imagen (URL)</label>
+                  <label class="block text-sm font-semibold text-slate-300 mb-2">Imagen</label>
                   <input
-                    v-model="nuevoProducto.imagen"
-                    type="text"
-                    placeholder="/uploads/producto.jpg"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
+                    type="file"
+                    accept="image/*"
+                    @change="onFileChange"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                   />
+                  <div v-if="imagePreview" class="mt-2">
+                    <img :src="imagePreview" alt="Preview" class="w-24 h-24 object-cover rounded" />
+                  </div>
                 </div>
               </div>
 
@@ -328,7 +331,10 @@
                   </tr>
                   <tr v-for="producto in productos" :key="producto.idProducto" class="hover:bg-slate-700/50 transition-colors">
                     <td class="px-6 py-4"><span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">#{{ producto.idProducto }}</span></td>
-                    <td class="px-6 py-4 text-slate-200">{{ producto.nombre }}</td>
+                    <td class="px-6 py-4 text-slate-200 flex items-center gap-3">
+                      <img v-if="producto.imagen" :src="producto.imagen" alt="" class="w-12 h-12 object-cover rounded" />
+                      <span>{{ producto.nombre }}</span>
+                    </td>
                     <td class="px-6 py-4 text-green-400 font-semibold">${{ formatPrice(producto.precio) }}</td>
                     <td class="px-6 py-4 text-slate-400">{{ producto.categoria?.nombre || 'N/A' }}</td>
                     <td class="px-6 py-4 space-x-2">
@@ -454,7 +460,7 @@
                   v-model="nuevaCategoria.nombre"
                   type="text"
                   placeholder="Ej: Camisetas"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                   required
                 />
               </div>
@@ -556,7 +562,7 @@ const pedidosRecientes = ref([])
 
 const mostrarFormNuevoProducto = ref(false)
 const mostrarFormNuevaCategoria = ref(false)
-const nuevoProducto = ref({ nombre: '', precio: '', categoriaId: '', imagen: '' })
+const nuevoProducto = ref({ nombre: '', precio: '', categoriaId: '', imagen: '', imagenFile: null })
 const nuevaCategoria = ref({ nombre: '' })
 
 const mostrarConfirmacion = ref(false)
@@ -564,16 +570,27 @@ const confirmacion = ref({ titulo: '', mensaje: '', boton: '', accion: null, dat
 
 const stats = ref({ productos: 0, usuarios: 0, pedidos: 0, ventas: 0, bajo_stock: 0 })
 
-const formatPrice = (price) => parseFloat(price).toFixed(2)
+const imagePreview = ref(null)
+
+const formatPrice = (price) => parseFloat(price || 0).toFixed(2)
 const formatDate = (date) => new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 
 const cargarDatos = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/products')
-    if (res.ok) {
-      productos.value = await res.json()
+    const [resProducts, resCategories] = await Promise.all([
+      fetch('http://localhost:3000/api/products'),
+      fetch('http://localhost:3000/api/categories')
+    ])
+
+    if (resProducts.ok) {
+      productos.value = await resProducts.json()
       stats.value.productos = productos.value.length
     }
+
+    if (resCategories.ok) {
+      categorias.value = await resCategories.json()
+    }
+
     stats.value.usuarios = 5
     stats.value.pedidos = 12
     stats.value.ventas = 1250.50
@@ -583,18 +600,43 @@ const cargarDatos = async () => {
   }
 }
 
+const onFileChange = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    nuevoProducto.value.imagenFile = file
+    imagePreview.value = URL.createObjectURL(file)
+  } else {
+    nuevoProducto.value.imagenFile = null
+    imagePreview.value = null
+  }
+}
+
 const crearProducto = async () => {
   try {
+    const form = new FormData()
+    form.append('nombre', nuevoProducto.value.nombre)
+    form.append('precio', nuevoProducto.value.precio)
+    form.append('categoriaId', nuevoProducto.value.categoriaId)
+    if (nuevoProducto.value.imagenFile) {
+      form.append('imagen', nuevoProducto.value.imagenFile)
+    } else if (nuevoProducto.value.imagen) {
+      form.append('imagen', nuevoProducto.value.imagen)
+    }
+
     const res = await fetch('http://localhost:3000/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(nuevoProducto.value)
+      body: form
     })
     if (res.ok) {
       mostrarFormNuevoProducto.value = false
-      nuevoProducto.value = { nombre: '', precio: '', categoriaId: '', imagen: '' }
+      nuevoProducto.value = { nombre: '', precio: '', categoriaId: '', imagen: '', imagenFile: null }
+      imagePreview.value = null
       cargarDatos()
       alert('Producto creado exitosamente')
+    } else {
+      const err = await res.json()
+      console.error('Error creando producto:', err)
+      alert('Error creando producto')
     }
   } catch (error) {
     console.error('Error:', error)

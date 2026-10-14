@@ -1,9 +1,21 @@
 import { Router } from 'express';
-import { getAllProducts } from '../controllers/products.controller.js';
+import { getAllProducts, createProduct } from '../controllers/products.controller.js';
+import multer from 'multer';
+import path from 'path';
 
 const router = Router();
 
-// Si quieres proteger la ruta, aquí puedes agregar tu middleware verifyToken
-router.get('/', getAllProducts)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(process.cwd(), 'uploads')),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_/]/g, '_');
+    cb(null, `${unique}-${safeName}`);
+  }
+});
+const upload = multer({ storage });
+
+router.get('/', getAllProducts);
+router.post('/', upload.single('imagen'), createProduct);
 
 export default router;
