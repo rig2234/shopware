@@ -5,14 +5,17 @@ import path from 'path';
 
 const router = Router();
 
+const uploadDir = path.resolve(process.cwd(), 'backend', 'uploads');
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(process.cwd(), 'uploads')),
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_/]/g, '_');
     cb(null, `${unique}-${safeName}`);
   }
 });
+
 const upload = multer({ storage });
 
 router.get('/', getAllProducts);

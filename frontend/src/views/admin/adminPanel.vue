@@ -102,7 +102,6 @@
             <p class="text-slate-400">Bienvenido al panel de administración</p>
           </div>
 
-          <!-- Stats Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
             <Card class="bg-slate-800 border-slate-700">
               <template #title>
@@ -259,7 +258,7 @@
                     <Dropdown
                       v-model="nuevoProducto.categoriaId"
                       :options="categorias"
-                      optionLabel="nombre"
+                      optionLabel="nombreCompleto"
                       optionValue="idCategoria"
                       placeholder="Selecciona..."
                     />
@@ -317,7 +316,7 @@
                     <div class="flex items-center gap-3">
                       <img
                         v-if="slotProps.data.imagen"
-                        :src="slotProps.data.imagen"
+                        :src="getImageUrl(slotProps.data.imagen)"
                         alt=""
                         class="w-12 h-12 object-cover rounded"
                       />
@@ -579,6 +578,12 @@ const formatDate = (date) =>
     minute: '2-digit'
   })
 
+const getImageUrl = (image) => {
+  if (!image) return 'https://placehold.co/120x120/1f2937/f8fafc?text=No+Image'
+  if (image.startsWith('http')) return image
+  return `http://localhost:3000${image.startsWith('/') ? image : `/${image}`}`
+}
+
 const cargarDatos = async () => {
   try {
     const [resProducts, resCategories] = await Promise.all([
@@ -717,6 +722,7 @@ const cancelarAccion = () => {
 
 const cerrarSesion = () => {
   localStorage.removeItem('token')
+  localStorage.removeItem('nombre')
   localStorage.removeItem('usuario')
   router.push('/login')
 }
