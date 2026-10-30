@@ -3,13 +3,25 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-// Estilos globales de Tailwind CSS e íconos de PrimeVue
+// Estilos globales
 import './assets/main.css'
 import 'primeicons/primeicons.css'
 
 // PrimeVue
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
+
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
+import Dropdown from 'primevue/dropdown'
+import FileUpload from 'primevue/fileupload'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Dialog from 'primevue/dialog'
+import Tag from 'primevue/tag'
+import PanelMenu from 'primevue/panelmenu'
 
 const app = createApp(App)
 
@@ -20,5 +32,17 @@ app.use(PrimeVue, {
     preset: Aura
   }
 })
+
+app.component('Button', Button)
+app.component('Card', Card)
+app.component('InputText', InputText)
+app.component('InputNumber', InputNumber)
+app.component('Dropdown', Dropdown)
+app.component('FileUpload', FileUpload)
+app.component('DataTable', DataTable)
+app.component('Column', Column)
+app.component('Dialog', Dialog)
+app.component('Tag', Tag)
+app.component('PanelMenu', PanelMenu)
 
 app.mount('#app')

@@ -1,108 +1,92 @@
 <template>
   <div class="min-h-screen bg-slate-950 text-white flex">
     <!-- Sidebar -->
-    <aside class="w-64 bg-slate-900 border-r border-slate-800 fixed h-screen flex flex-col">
-      <div class="p-6 border-b border-slate-800">
-        <h1 class="text-2xl font-bold text-amber-500 mb-2">Admin Panel</h1>
-        <p class="text-sm text-slate-400">{{ usuario?.nombre || 'Administrador' }}</p>
+    <aside class="w-64 bg-slate-900/90 border-r border-slate-800 fixed h-screen flex flex-col backdrop-blur-sm shadow-2xl shadow-slate-950/40">
+      <div class="p-5 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+            <i class="pi pi-shield text-slate-950 text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-amber-500 tracking-tight">Admin Panel</h1>
+            <p class="text-xs text-slate-400">{{ usuario?.nombre || 'Administrador' }}</p>
+          </div>
+        </div>
       </div>
 
       <nav class="flex-1 p-4 space-y-2">
         <button
           @click="seccionActiva = 'dashboard'"
           :class="[
-            'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left',
+            'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
             seccionActiva === 'dashboard'
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
           ]"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-          Dashboard
+          <i class="pi pi-home text-base"></i>
+          <span class="font-medium">Dashboard</span>
         </button>
+
         <button
           @click="seccionActiva = 'productos'"
           :class="[
-            'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left',
+            'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
             seccionActiva === 'productos'
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
           ]"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-          </svg>
-          Productos
+          <i class="pi pi-box text-base"></i>
+          <span class="font-medium">Productos</span>
         </button>
+
         <button
           @click="seccionActiva = 'usuarios'"
           :class="[
-            'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left',
+            'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
             seccionActiva === 'usuarios'
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
           ]"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          Usuarios
+          <i class="pi pi-users text-base"></i>
+          <span class="font-medium">Usuarios</span>
         </button>
+
         <button
           @click="seccionActiva = 'pedidos'"
           :class="[
-            'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left',
+            'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
             seccionActiva === 'pedidos'
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
           ]"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-          </svg>
-          Pedidos
+          <i class="pi pi-shopping-cart text-base"></i>
+          <span class="font-medium">Pedidos</span>
         </button>
+
         <button
           @click="seccionActiva = 'categorias'"
           :class="[
-            'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left',
+            'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
             seccionActiva === 'categorias'
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
           ]"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-          </svg>
-          Categorías
+          <i class="pi pi-tags text-base"></i>
+          <span class="font-medium">Categorías</span>
         </button>
       </nav>
 
       <div class="p-4 border-t border-slate-800">
         <button
           @click="cerrarSesion"
-          class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-red-950 text-red-400 hover:bg-red-900 transition-all"
+          class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium transition-all shadow-lg shadow-red-600/20"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
+          <i class="pi pi-sign-out text-base"></i>
           Cerrar Sesión
         </button>
       </div>
@@ -119,105 +103,114 @@
           </div>
 
           <!-- Stats Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <p class="text-slate-400 text-sm mb-2">Total Productos</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+            <Card class="bg-slate-800 border-slate-700">
+              <template #title>
+                <span class="text-slate-300">Total Productos</span>
+              </template>
+              <template #content>
+                <div class="flex items-center justify-between">
                   <p class="text-3xl font-bold text-white">{{ stats.productos }}</p>
+                  <div class="bg-blue-500/20 p-3 rounded-lg text-blue-400">
+                    <i class="pi pi-box text-2xl"></i>
+                  </div>
                 </div>
-                <div class="bg-blue-500/20 p-3 rounded-lg text-blue-400">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
+              </template>
+            </Card>
 
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-green-500 transition-all hover:shadow-lg hover:shadow-green-500/10 hover:-translate-y-1">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <p class="text-slate-400 text-sm mb-2">Total Usuarios</p>
+            <Card class="bg-slate-800 border-slate-700">
+              <template #title>
+                <span class="text-slate-300">Total Usuarios</span>
+              </template>
+              <template #content>
+                <div class="flex items-center justify-between">
                   <p class="text-3xl font-bold text-white">{{ stats.usuarios }}</p>
+                  <div class="bg-green-500/20 p-3 rounded-lg text-green-400">
+                    <i class="pi pi-users text-2xl"></i>
+                  </div>
                 </div>
-                <div class="bg-green-500/20 p-3 rounded-lg text-green-400">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                  </svg>
-                </div>
-              </div>
-            </div>
+              </template>
+            </Card>
 
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-purple-500 transition-all hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-1">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <p class="text-slate-400 text-sm mb-2">Total Pedidos</p>
+            <Card class="bg-slate-800 border-slate-700">
+              <template #title>
+                <span class="text-slate-300">Total Pedidos</span>
+              </template>
+              <template #content>
+                <div class="flex items-center justify-between">
                   <p class="text-3xl font-bold text-white">{{ stats.pedidos }}</p>
+                  <div class="bg-purple-500/20 p-3 rounded-lg text-purple-400">
+                    <i class="pi pi-shopping-cart text-2xl"></i>
+                  </div>
                 </div>
-                <div class="bg-purple-500/20 p-3 rounded-lg text-purple-400">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="9" cy="21" r="1"></circle>
-                    <circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
+              </template>
+            </Card>
 
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-amber-500 transition-all hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-1">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <p class="text-slate-400 text-sm mb-2">Ventas Totales</p>
+            <Card class="bg-slate-800 border-slate-700">
+              <template #title>
+                <span class="text-slate-300">Ventas Totales</span>
+              </template>
+              <template #content>
+                <div class="flex items-center justify-between">
                   <p class="text-3xl font-bold text-white">${{ formatPrice(stats.ventas) }}</p>
+                  <div class="bg-amber-500/20 p-3 rounded-lg text-amber-400">
+                    <i class="pi pi-dollar text-2xl"></i>
+                  </div>
                 </div>
-                <div class="bg-amber-500/20 p-3 rounded-lg text-amber-400">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
+              </template>
+            </Card>
           </div>
 
-          <!-- Alert -->
-          <div v-if="stats.bajo_stock > 0" class="bg-amber-950 border-l-4 border-amber-500 p-4 rounded mb-8 flex items-center gap-3">
-            <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            </svg>
-            <span class="text-amber-100">Hay <strong>{{ stats.bajo_stock }}</strong> producto(s) con bajo stock. <a href="#" @click.prevent="seccionActiva = 'productos'" class="underline hover:no-underline">Ver productos</a></span>
+          <div
+            v-if="stats.bajo_stock > 0"
+            class="bg-amber-950 border-l-4 border-amber-500 p-4 rounded mb-8 flex items-center gap-3"
+          >
+            <i class="pi pi-exclamation-triangle text-amber-500 text-lg"></i>
+            <span class="text-amber-100">
+              Hay <strong>{{ stats.bajo_stock }}</strong> producto(s) con bajo stock.
+              <a href="#" @click.prevent="seccionActiva = 'productos'" class="underline hover:no-underline">
+                Ver productos
+              </a>
+            </span>
           </div>
 
-          <!-- Recent Orders -->
-          <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-            <div class="p-6 border-b border-slate-700">
-              <h2 class="text-xl font-bold text-white">Pedidos Recientes</h2>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-slate-700 bg-slate-900/50">
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">ID Pedido</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Cliente</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Fecha</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Total</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700">
-                  <tr v-if="pedidosRecientes.length === 0" class="hover:bg-slate-700/50">
-                    <td colspan="4" class="px-6 py-8 text-center text-slate-400">No hay pedidos registrados</td>
-                  </tr>
-                  <tr v-for="pedido in pedidosRecientes" :key="pedido.idPedido" class="hover:bg-slate-700/50 transition-colors">
-                    <td class="px-6 py-4"><span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">#{{ pedido.idPedido }}</span></td>
-                    <td class="px-6 py-4 text-slate-200">{{ pedido.usuario?.nombre || 'N/A' }}</td>
-                    <td class="px-6 py-4 text-slate-400">{{ formatDate(pedido.fechaPedido) }}</td>
-                    <td class="px-6 py-4 text-green-400 font-semibold">${{ formatPrice(pedido.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card class="bg-slate-800 border-slate-700 overflow-hidden">
+            <template #title>
+              <span class="text-white">Pedidos Recientes</span>
+            </template>
+
+            <template #content>
+              <DataTable :value="pedidosRecientes" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+                <Column field="idPedido" header="ID Pedido">
+                  <template #body="slotProps">
+                    <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                      #{{ slotProps.data.idPedido }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="usuario" header="Cliente">
+                  <template #body="slotProps">
+                    {{ slotProps.data.usuario?.nombre || 'N/A' }}
+                  </template>
+                </Column>
+
+                <Column field="fechaPedido" header="Fecha">
+                  <template #body="slotProps">
+                    {{ formatDate(slotProps.data.fechaPedido) }}
+                  </template>
+                </Column>
+
+                <Column field="total" header="Total">
+                  <template #body="slotProps">
+                    <span class="text-green-400 font-semibold">
+                      ${{ formatPrice(slotProps.data.total) }}
+                    </span>
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
         </div>
 
         <!-- Productos -->
@@ -227,125 +220,142 @@
               <h1 class="text-4xl font-bold text-white mb-2">Productos</h1>
               <p class="text-slate-400">Gestiona el catálogo de productos</p>
             </div>
-            <button
+
+            <Button
+              label="Nuevo Producto"
+              icon="pi pi-plus"
+              severity="primary"
               @click="mostrarFormNuevoProducto = !mostrarFormNuevoProducto"
-              class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Nuevo Producto
-            </button>
+            />
           </div>
 
           <!-- Formulario -->
-          <div v-if="mostrarFormNuevoProducto" class="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8 animate-in fade-in duration-300">
-            <h3 class="text-xl font-bold text-white mb-2">Crear Nuevo Producto</h3>
-            <p class="text-slate-400 mb-6">Completa los datos del producto</p>
+          <Card v-if="mostrarFormNuevoProducto" class="mb-8">
+            <template #title>
+              <span class="text-white">Crear Nuevo Producto</span>
+            </template>
 
-            <form @submit.prevent="crearProducto" class="space-y-6" enctype="multipart/form-data">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label class="block text-sm font-semibold text-slate-300 mb-2">Nombre</label>
-                  <input
-                    v-model="nuevoProducto.nombre"
-                    type="text"
-                    placeholder="Ej: Camiseta Azul"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                    required
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-slate-300 mb-2">Precio</label>
-                  <input
-                    v-model.number="nuevoProducto.precio"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                    required
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-slate-300 mb-2">Categoría</label>
-                  <select
-                    v-model="nuevoProducto.categoriaId"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
-                    required
-                  >
-                    <option value="">Selecciona...</option>
-                    <option v-for="cat in categorias" :key="cat.idCategoria" :value="cat.idCategoria">
-                      {{ cat.nombre }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-slate-300 mb-2">Imagen</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    @change="onFileChange"
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                  />
-                  <div v-if="imagePreview" class="mt-2">
-                    <img :src="imagePreview" alt="Preview" class="w-24 h-24 object-cover rounded" />
+            <template #content>
+              <form @submit.prevent="crearProducto" class="space-y-6" enctype="multipart/form-data">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Nombre</label>
+                    <InputText v-model="nuevoProducto.nombre" placeholder="Ej: Camiseta Azul" />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Precio</label>
+                    <InputNumber
+                      v-model="nuevoProducto.precio"
+                      mode="decimal"
+                      :minFractionDigits="2"
+                      :maxFractionDigits="2"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Categoría</label>
+                    <Dropdown
+                      v-model="nuevoProducto.categoriaId"
+                      :options="categorias"
+                      optionLabel="nombre"
+                      optionValue="idCategoria"
+                      placeholder="Selecciona..."
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Imagen</label>
+                    <FileUpload
+                      mode="basic"
+                      accept="image/*"
+                      :auto="true"
+                      :maxFileSize="10000000"
+                      @select="onFileChange"
+                    />
+                    <div v-if="imagePreview" class="mt-2">
+                      <img :src="imagePreview" alt="Preview" class="w-24 h-24 object-cover rounded" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
-                <button
-                  type="button"
-                  @click="mostrarFormNuevoProducto = false"
-                  class="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all"
-                >
-                  Crear Producto
-                </button>
-              </div>
-            </form>
-          </div>
+                <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                  <Button
+                    type="button"
+                    label="Cancelar"
+                    severity="secondary"
+                    @click="mostrarFormNuevoProducto = false"
+                  />
+                  <Button type="submit" label="Crear Producto" severity="success" />
+                </div>
+              </form>
+            </template>
+          </Card>
 
           <!-- Tabla -->
-          <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-slate-700 bg-slate-900/50">
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">ID</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Nombre</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Precio</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Categoría</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700">
-                  <tr v-if="productos.length === 0" class="hover:bg-slate-700/50">
-                    <td colspan="5" class="px-6 py-8 text-center text-slate-400">No hay productos registrados</td>
-                  </tr>
-                  <tr v-for="producto in productos" :key="producto.idProducto" class="hover:bg-slate-700/50 transition-colors">
-                    <td class="px-6 py-4"><span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">#{{ producto.idProducto }}</span></td>
-                    <td class="px-6 py-4 text-slate-200 flex items-center gap-3">
-                      <img v-if="producto.imagen" :src="producto.imagen" alt="" class="w-12 h-12 object-cover rounded" />
-                      <span>{{ producto.nombre }}</span>
-                    </td>
-                    <td class="px-6 py-4 text-green-400 font-semibold">${{ formatPrice(producto.precio) }}</td>
-                    <td class="px-6 py-4 text-slate-400">{{ producto.categoria?.nombre || 'N/A' }}</td>
-                    <td class="px-6 py-4 space-x-2">
-                      <button class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-all">Editar</button>
-                      <button @click="eliminarProductoConfirm(producto)" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-all">Eliminar</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card>
+            <template #content>
+              <DataTable
+                :value="productos"
+                tableStyle="min-width: 100%"
+                paginator
+                :rows="10"
+                :rowsPerPageOptions="[10, 20, 30]"
+                responsiveLayout="scroll"
+              >
+                <Column field="idProducto" header="ID">
+                  <template #body="slotProps">
+                    <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                      #{{ slotProps.data.idProducto }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="nombre" header="Nombre">
+                  <template #body="slotProps">
+                    <div class="flex items-center gap-3">
+                      <img
+                        v-if="slotProps.data.imagen"
+                        :src="slotProps.data.imagen"
+                        alt=""
+                        class="w-12 h-12 object-cover rounded"
+                      />
+                      <span>{{ slotProps.data.nombre }}</span>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column field="precio" header="Precio">
+                  <template #body="slotProps">
+                    <span class="text-green-400 font-semibold">
+                      ${{ formatPrice(slotProps.data.precio) }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="categoria" header="Categoría">
+                  <template #body="slotProps">
+                    {{ slotProps.data.categoria?.nombre || 'N/A' }}
+                  </template>
+                </Column>
+
+                <Column header="Acciones">
+                  <template #body="slotProps">
+                    <div class="flex gap-2">
+                      <Button label="Editar" severity="warning" size="small" />
+                      <Button
+                        label="Eliminar"
+                        severity="danger"
+                        size="small"
+                        @click="eliminarProductoConfirm(slotProps.data)"
+                      />
+                    </div>
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
         </div>
 
         <!-- Usuarios -->
@@ -355,42 +365,36 @@
             <p class="text-slate-400">Gestiona los usuarios registrados</p>
           </div>
 
-          <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-slate-700 bg-slate-900/50">
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">ID</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Nombre</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Correo</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Rol</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Estado</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700">
-                  <tr v-if="usuarios.length === 0" class="hover:bg-slate-700/50">
-                    <td colspan="5" class="px-6 py-8 text-center text-slate-400">No hay usuarios registrados</td>
-                  </tr>
-                  <tr v-for="user in usuarios" :key="user.idUsuario" class="hover:bg-slate-700/50 transition-colors">
-                    <td class="px-6 py-4"><span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">#{{ user.idUsuario }}</span></td>
-                    <td class="px-6 py-4 text-slate-200">{{ user.nombre }}</td>
-                    <td class="px-6 py-4 text-slate-400">{{ user.correo }}</td>
-                    <td class="px-6 py-4 text-slate-400">{{ user.rol?.nombreRol || 'N/A' }}</td>
-                    <td class="px-6 py-4">
-                      <span :class="[
-                        'px-3 py-1 rounded-full text-sm font-semibold',
-                        user.estatus === 'activo'
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'bg-red-500/20 text-red-400'
-                      ]">
-                        {{ user.estatus }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card>
+            <template #content>
+              <DataTable :value="usuarios" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+                <Column field="idUsuario" header="ID">
+                  <template #body="slotProps">
+                    <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                      #{{ slotProps.data.idUsuario }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="nombre" header="Nombre" />
+                <Column field="correo" header="Correo" />
+                <Column field="rol" header="Rol">
+                  <template #body="slotProps">
+                    {{ slotProps.data.rol?.nombreRol || 'N/A' }}
+                  </template>
+                </Column>
+
+                <Column field="estatus" header="Estado">
+                  <template #body="slotProps">
+                    <Tag
+                      :value="slotProps.data.estatus"
+                      :severity="slotProps.data.estatus === 'activo' ? 'success' : 'danger'"
+                    />
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
         </div>
 
         <!-- Pedidos -->
@@ -400,33 +404,45 @@
             <p class="text-slate-400">Historial de pedidos realizados</p>
           </div>
 
-          <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-slate-700 bg-slate-900/50">
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">ID Pedido</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Cliente</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Fecha</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Total</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Artículos</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700">
-                  <tr v-if="pedidos.length === 0" class="hover:bg-slate-700/50">
-                    <td colspan="5" class="px-6 py-8 text-center text-slate-400">No hay pedidos registrados</td>
-                  </tr>
-                  <tr v-for="pedido in pedidos" :key="pedido.idPedido" class="hover:bg-slate-700/50 transition-colors">
-                    <td class="px-6 py-4"><span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">#{{ pedido.idPedido }}</span></td>
-                    <td class="px-6 py-4 text-slate-200">{{ pedido.usuario?.nombre || 'N/A' }}</td>
-                    <td class="px-6 py-4 text-slate-400">{{ formatDate(pedido.fechaPedido) }}</td>
-                    <td class="px-6 py-4 text-green-400 font-semibold">${{ formatPrice(pedido.total) }}</td>
-                    <td class="px-6 py-4 text-slate-400">{{ pedido.detalles?.length || 0 }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card>
+            <template #content>
+              <DataTable :value="pedidos" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+                <Column field="idPedido" header="ID Pedido">
+                  <template #body="slotProps">
+                    <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                      #{{ slotProps.data.idPedido }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="usuario" header="Cliente">
+                  <template #body="slotProps">
+                    {{ slotProps.data.usuario?.nombre || 'N/A' }}
+                  </template>
+                </Column>
+
+                <Column field="fechaPedido" header="Fecha">
+                  <template #body="slotProps">
+                    {{ formatDate(slotProps.data.fechaPedido) }}
+                  </template>
+                </Column>
+
+                <Column field="total" header="Total">
+                  <template #body="slotProps">
+                    <span class="text-green-400 font-semibold">
+                      ${{ formatPrice(slotProps.data.total) }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="detalles" header="Artículos">
+                  <template #body="slotProps">
+                    {{ slotProps.data.detalles?.length || 0 }}
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
         </div>
 
         <!-- Categorías -->
@@ -436,113 +452,94 @@
               <h1 class="text-4xl font-bold text-white mb-2">Categorías</h1>
               <p class="text-slate-400">Gestiona las categorías de productos</p>
             </div>
-            <button
+
+            <Button
+              label="Nueva Categoría"
+              icon="pi pi-plus"
+              severity="primary"
               @click="mostrarFormNuevaCategoria = !mostrarFormNuevaCategoria"
-              class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Nueva Categoría
-            </button>
+            />
           </div>
 
           <!-- Formulario -->
-          <div v-if="mostrarFormNuevaCategoria" class="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8 animate-in fade-in duration-300">
-            <h3 class="text-xl font-bold text-white mb-2">Crear Nueva Categoría</h3>
-            <p class="text-slate-400 mb-6">Agrega una nueva categoría al sistema</p>
+          <Card v-if="mostrarFormNuevaCategoria" class="mb-8">
+            <template #title>
+              <span class="text-white">Crear Nueva Categoría</span>
+            </template>
 
-            <form @submit.prevent="crearCategoria" class="space-y-6">
-              <div>
-                <label class="block text-sm font-semibold text-slate-300 mb-2">Nombre</label>
-                <input
-                  v-model="nuevaCategoria.nombre"
-                  type="text"
-                  placeholder="Ej: Camisetas"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                  required
-                />
-              </div>
+            <template #content>
+              <form @submit.prevent="crearCategoria" class="space-y-6">
+                <div>
+                  <label class="text-slate-300 block mb-2">Nombre</label>
+                  <InputText v-model="nuevaCategoria.nombre" placeholder="Ej: Camisetas" />
+                </div>
 
-              <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
-                <button
-                  type="button"
-                  @click="mostrarFormNuevaCategoria = false"
-                  class="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all"
-                >
-                  Crear Categoría
-                </button>
-              </div>
-            </form>
-          </div>
+                <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                  <Button
+                    type="button"
+                    label="Cancelar"
+                    severity="secondary"
+                    @click="mostrarFormNuevaCategoria = false"
+                  />
+                  <Button type="submit" label="Crear Categoría" severity="success" />
+                </div>
+              </form>
+            </template>
+          </Card>
 
           <!-- Tabla -->
-          <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-slate-700 bg-slate-900/50">
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">ID</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Nombre</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Productos</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-300">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700">
-                  <tr v-if="categorias.length === 0" class="hover:bg-slate-700/50">
-                    <td colspan="4" class="px-6 py-8 text-center text-slate-400">No hay categorías registradas</td>
-                  </tr>
-                  <tr v-for="cat in categorias" :key="cat.idCategoria" class="hover:bg-slate-700/50 transition-colors">
-                    <td class="px-6 py-4"><span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">#{{ cat.idCategoria }}</span></td>
-                    <td class="px-6 py-4 text-slate-200">{{ cat.nombre }}</td>
-                    <td class="px-6 py-4 text-slate-400">{{ cat.productos?.length || 0 }}</td>
-                    <td class="px-6 py-4">
-                      <button @click="eliminarCategoriaConfirm(cat)" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-all">Eliminar</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card>
+            <template #content>
+              <DataTable :value="categorias" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+                <Column field="idCategoria" header="ID">
+                  <template #body="slotProps">
+                    <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                      #{{ slotProps.data.idCategoria }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="nombre" header="Nombre" />
+                <Column field="productos" header="Productos">
+                  <template #body="slotProps">
+                    {{ slotProps.data.productos?.length || 0 }}
+                  </template>
+                </Column>
+
+                <Column header="Acciones">
+                  <template #body="slotProps">
+                    <Button
+                      label="Eliminar"
+                      severity="danger"
+                      size="small"
+                      @click="eliminarCategoriaConfirm(slotProps.data)"
+                    />
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
         </div>
       </div>
     </main>
 
     <!-- Modal de Confirmación -->
-    <div v-if="mostrarConfirmacion" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div class="bg-slate-800 border border-slate-700 rounded-lg p-8 max-w-md w-full mx-4 animate-in scale-95 duration-300">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="bg-amber-500/20 p-3 rounded-full text-amber-500">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            </svg>
-          </div>
-        </div>
-        <h3 class="text-xl font-bold text-white mb-2">{{ confirmacion.titulo }}</h3>
-        <p class="text-slate-400 mb-6">{{ confirmacion.mensaje }}</p>
-        <div class="flex gap-3 justify-end">
-          <button
-            @click="cancelarAccion"
-            class="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-all"
-          >
-            Cancelar
-          </button>
-          <button
-            @click="confirmarAccion"
-            class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all"
-          >
-            {{ confirmacion.boton }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <Dialog v-model:visible="mostrarConfirmacion" modal header="Confirmación">
+      <p class="text-slate-300">{{ confirmacion.mensaje }}</p>
+
+      <template #footer>
+        <Button
+          label="Cancelar"
+          severity="secondary"
+          @click="mostrarConfirmacion = false"
+        />
+        <Button
+          :label="confirmacion.boton"
+          severity="danger"
+          @click="confirmarAccion"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -573,7 +570,14 @@ const stats = ref({ productos: 0, usuarios: 0, pedidos: 0, ventas: 0, bajo_stock
 const imagePreview = ref(null)
 
 const formatPrice = (price) => parseFloat(price || 0).toFixed(2)
-const formatDate = (date) => new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+const formatDate = (date) =>
+  new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 
 const cargarDatos = async () => {
   try {
@@ -593,15 +597,16 @@ const cargarDatos = async () => {
 
     stats.value.usuarios = 5
     stats.value.pedidos = 12
-    stats.value.ventas = 1250.50
+    stats.value.ventas = 1250.5
     stats.value.bajo_stock = 3
   } catch (error) {
     console.error('Error:', error)
   }
 }
 
-const onFileChange = (e) => {
-  const file = e.target.files[0]
+const onFileChange = (event) => {
+  const file = event?.files?.[0] || event?.target?.files?.[0] || null
+
   if (file) {
     nuevoProducto.value.imagenFile = file
     imagePreview.value = URL.createObjectURL(file)
@@ -673,11 +678,32 @@ const eliminarCategoriaConfirm = (categoria) => {
 const confirmarAccion = async () => {
   if (confirmacion.value.accion === 'eliminarProducto') {
     try {
-      const res = await fetch(`http://localhost:3000/api/products/${confirmacion.value.datos.idProducto}`, { method: 'DELETE' })
+      const res = await fetch(
+        `http://localhost:3000/api/products/${confirmacion.value.datos.idProducto}`,
+        { method: 'DELETE' }
+      )
+
       if (res.ok) {
         mostrarConfirmacion.value = false
         cargarDatos()
         alert('Producto eliminado exitosamente')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    }
+  }
+
+  if (confirmacion.value.accion === 'eliminarCategoria') {
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/products/categories/${confirmacion.value.datos.idCategoria}`,
+        { method: 'DELETE' }
+      )
+
+      if (res.ok) {
+        mostrarConfirmacion.value = false
+        cargarDatos()
+        alert('Categoría eliminada exitosamente')
       }
     } catch (error) {
       console.error('Error:', error)

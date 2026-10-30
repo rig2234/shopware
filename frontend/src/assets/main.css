@@ -1,1 +1,122 @@
 @import "tailwindcss";
+
+:root {
+  --p-primary-500: #10b981;
+  --p-primary-600: #059669;
+  --p-primary-700: #047857;
+
+  --p-surface-0: #0b1220;
+  --p-surface-50: #111827;
+  --p-surface-100: #1f2937;
+  --p-surface-200: #374151;
+  --p-surface-300: #4b5563;
+
+  --p-content-border-color: #334155;
+  --p-content-border-radius: 12px;
+
+  --p-text-color: #f8fafc;
+  --p-text-muted-color: #94a3b8;
+
+  --p-form-field-background: #0f172a;
+  --p-form-field-border-color: #334155;
+  --p-form-field-hover-border-color: #475569;
+  --p-form-field-focus-border-color: #10b981;
+
+  --p-button-primary-background: #10b981;
+  --p-button-primary-hover-background: #059669;
+  --p-button-primary-active-background: #047857;
+}
+
+body {
+  background: #020817;
+  color: #f8fafc;
+}
+
+.p-card,
+.p-datatable,
+.p-dropdown,
+.p-inputtext,
+.p-inputnumber,
+.p-fileupload,
+.p-dialog {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.p-card {
+  box-shadow: none !important;
+}
+
+.p-inputtext,
+.p-dropdown,
+.p-inputnumber input {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+.p-inputtext:focus,
+.p-dropdown:focus,
+.p-inputnumber input:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+.p-button.p-button-primary {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+}
+
+.p-button.p-button-danger {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+.p-button.p-button-secondary {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: #0b1220 !important;
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: #334155 !important;
+}
+
+.p-dialog .p-dialog-header,
+.p-dialog .p-dialog-content,
+.p-dialog .p-dialog-footer {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.p-paginator {
+  background: transparent !important;
+  border: none !important;
+  color: #e2e8f0 !important;
+}
+
+.p-paginator .p-paginator-page,
+.p-paginator .p-paginator-next,
+.p-paginator .p-paginator-prev {
+  color: #e2e8f0 !important;
+  border-radius: 8px !important;
+}
+
+.p-paginator .p-highlight {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: white !important;
+}
