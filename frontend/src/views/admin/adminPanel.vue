@@ -92,10 +92,8 @@
       </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="ml-64 flex-1 overflow-auto">
       <div class="p-8">
-        <!-- Dashboard -->
         <div v-if="seccionActiva === 'dashboard'">
           <div class="mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">Dashboard</h1>
@@ -262,6 +260,40 @@
                       optionValue="idCategoria"
                       placeholder="Selecciona..."
                     />
+                  </div>
+
+                  <div class="md:col-span-2 lg:col-span-4">
+                    <label class="block text-sm font-semibold text-slate-300 mb-3">
+                      Tallas y stock
+                    </label>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div
+                        v-for="talla in tallas"
+                        :key="talla.idTalla"
+                        class="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-900 p-4"
+                      >
+                        <input
+                          v-model="tallasSeleccionadas"
+                          type="checkbox"
+                          :value="talla.idTalla"
+                          class="h-4 w-4 accent-emerald-500"
+                        />
+
+                        <label class="min-w-10 font-semibold text-white">
+                          {{ talla.nombre }}
+                        </label>
+
+                        <InputNumber
+                          v-model="stockPorTalla[talla.idTalla]"
+                          :min="0"
+                          :showButtons="true"
+                          placeholder="Stock"
+                          :disabled="!tallasSeleccionadas.includes(talla.idTalla)"
+                          class="min-w-0 flex-1"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -460,7 +492,6 @@
             />
           </div>
 
-          <!-- Formulario -->
           <Card v-if="mostrarFormNuevaCategoria" class="mb-8">
             <template #title>
               <span class="text-white">Crear Nueva Categoría</span>
@@ -486,7 +517,6 @@
             </template>
           </Card>
 
-          <!-- Tabla -->
           <Card>
             <template #content>
               <DataTable :value="categorias" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
@@ -539,14 +569,18 @@
         />
       </template>
     </Dialog>
+
+    <Toast />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 
 const router = useRouter()
+const toast = useToast()
 const seccionActiva = ref('dashboard')
 const usuario = ref(null)
 
@@ -554,11 +588,22 @@ const productos = ref([])
 const usuarios = ref([])
 const pedidos = ref([])
 const categorias = ref([])
+const tallas = ref([])
+const tallasSeleccionadas = ref([])
+const stockPorTalla = ref({})
 const pedidosRecientes = ref([])
 
 const mostrarFormNuevoProducto = ref(false)
 const mostrarFormNuevaCategoria = ref(false)
-const nuevoProducto = ref({ nombre: '', precio: '', categoriaId: '', imagen: '', imagenFile: null })
+const nuevoProducto = ref({
+  nombre: '',
+  precio: '',
+  categoriaId: '',
+  tallaId: '',
+  stock: 0,
+  imagen: '',
+  imagenFile: null
+})
 const nuevaCategoria = ref({ nombre: '' })
 
 const mostrarConfirmacion = ref(false)
@@ -586,9 +631,10 @@ const getImageUrl = (image) => {
 
 const cargarDatos = async () => {
   try {
-    const [resProducts, resCategories] = await Promise.all([
+    const [resProducts, resCategories, resTallas] = await Promise.all([
       fetch('http://localhost:3000/api/products'),
-      fetch('http://localhost:3000/api/categories')
+      fetch('http://localhost:3000/api/categories'),
+      fetch('http://localhost:3000/api/tallas')
     ])
 
     if (resProducts.ok) {
@@ -598,6 +644,10 @@ const cargarDatos = async () => {
 
     if (resCategories.ok) {
       categorias.value = await resCategories.json()
+    }
+
+    if (resTallas.ok) {
+      tallas.value = await resTallas.json()
     }
 
     stats.value.usuarios = 5
@@ -627,6 +677,14 @@ const crearProducto = async () => {
     form.append('nombre', nuevoProducto.value.nombre)
     form.append('precio', nuevoProducto.value.precio)
     form.append('categoriaId', nuevoProducto.value.categoriaId)
+
+    const tallasDelProducto = tallasSeleccionadas.value.map((idTalla) => ({
+      idTalla: Number(idTalla),
+      stock: Number(stockPorTalla.value[idTalla] ?? 0)
+    }))
+
+    form.append('tallas', JSON.stringify(tallasDelProducto))
+
     if (nuevoProducto.value.imagenFile) {
       form.append('imagen', nuevoProducto.value.imagenFile)
     } else if (nuevoProducto.value.imagen) {
@@ -637,19 +695,46 @@ const crearProducto = async () => {
       method: 'POST',
       body: form
     })
+
     if (res.ok) {
       mostrarFormNuevoProducto.value = false
-      nuevoProducto.value = { nombre: '', precio: '', categoriaId: '', imagen: '', imagenFile: null }
+      nuevoProducto.value = {
+        nombre: '',
+        precio: '',
+        categoriaId: '',
+        tallaId: '',
+        stock: 0,
+        imagen: '',
+        imagenFile: null
+      }
+      tallasSeleccionadas.value = []
+      stockPorTalla.value = {}
       imagePreview.value = null
       cargarDatos()
-      alert('Producto creado exitosamente')
+      toast.add({
+        severity: 'success',
+        summary: 'Producto creado',
+        detail: 'El producto se registró correctamente.',
+        life: 2500
+      })
     } else {
       const err = await res.json()
       console.error('Error creando producto:', err)
-      alert('Error creando producto')
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo crear el producto.',
+        life: 2500
+      })
     }
   } catch (error) {
     console.error('Error:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Ocurrió un problema al crear el producto.',
+      life: 2500
+    })
   }
 }
 
@@ -691,27 +776,33 @@ const confirmarAccion = async () => {
       if (res.ok) {
         mostrarConfirmacion.value = false
         cargarDatos()
-        alert('Producto eliminado exitosamente')
+
+        toast.add({
+          severity: 'success',
+          summary: 'Producto eliminado',
+          detail: 'El producto se eliminó correctamente.',
+          life: 2500
+        })
+      } else {
+        const err = await res.json()
+        console.error(err)
+
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo eliminar el producto.',
+          life: 2500
+        })
       }
     } catch (error) {
       console.error('Error:', error)
-    }
-  }
 
-  if (confirmacion.value.accion === 'eliminarCategoria') {
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/products/categories/${confirmacion.value.datos.idCategoria}`,
-        { method: 'DELETE' }
-      )
-
-      if (res.ok) {
-        mostrarConfirmacion.value = false
-        cargarDatos()
-        alert('Categoría eliminada exitosamente')
-      }
-    } catch (error) {
-      console.error('Error:', error)
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Ocurrió un problema al eliminar el producto.',
+        life: 2500
+      })
     }
   }
 }

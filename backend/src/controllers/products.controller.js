@@ -1,4 +1,7 @@
 import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
+
 const prisma = new PrismaClient();
 
 export const getAllProducts = async (req, res) => {
@@ -54,7 +57,6 @@ export const createProduct = async (req, res) => {
           }
         });
       } catch (ptError) {
-        // Si ya existe, actualizamos el stock (safe fallback)
         await prisma.productoTalla.updateMany({
           where: { idProducto: product.idProducto, idTalla: Number(tallaId) },
           data: { stock: stock ? Number(stock) : 0 }
@@ -76,7 +78,6 @@ export const createProduct = async (req, res) => {
         console.warn('P2002 detectado en id_producto — intentando corregir secuencia y reintentar');
         await fixProductoSequence();
 
-        // Reintento (simple)
         const { nombre, precio, categoriaId, tallaId, stock } = req.body;
         let imagenPath = null;
         if (req.file) imagenPath = `/uploads/${req.file.filename}`;
@@ -109,5 +110,46 @@ export const createProduct = async (req, res) => {
     }
 
     res.status(500).json({ error: 'Error interno del servidor al crear producto', detail: error.message || String(error) });
+  }
+};
+
+export const deleteProduct = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!id || Number.isNaN(id)) {
+      return res.status(400).json({ error: 'ID de producto inválido' });
+    }
+
+    const product = await prisma.producto.findUnique({
+      where: { idProducto: id }
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    // borrar imagen del disco si existe
+    if (product.imagen && !product.imagen.startsWith('http')) {
+      const relativePath = product.imagen.replace(/^\/+/, '');
+      const filePath = path.resolve(process.cwd(), 'backend', relativePath);
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    await prisma.productoTalla.deleteMany({
+      where: { idProducto: id }
+    });
+
+    await prisma.producto.delete({
+      where: { idProducto: id }
+    });
+
+    return res.json({ message: 'Producto eliminado correctamente', id });
+  } catch (error) {
+    console.error('Error eliminando producto:', error);
+    return res.status(500).json({ error: 'Error al eliminar producto', detail: error.message || String(error) });
   }
 };

@@ -22,6 +22,8 @@ import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import Tag from 'primevue/tag'
 import PanelMenu from 'primevue/panelmenu'
+import Toast from 'primevue/toast'
+import ToastService from 'primevue/toastservice'
 
 const app = createApp(App)
 
@@ -32,6 +34,7 @@ app.use(PrimeVue, {
     preset: Aura
   }
 })
+app.use(ToastService)
 
 app.component('Button', Button)
 app.component('Card', Card)
@@ -44,5 +47,6 @@ app.component('Column', Column)
 app.component('Dialog', Dialog)
 app.component('Tag', Tag)
 app.component('PanelMenu', PanelMenu)
+app.component('Toast', Toast)
 
 app.mount('#app')
