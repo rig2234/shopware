@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { getAllProducts, createProduct, deleteProduct } from '../controllers/products.controller.js';
+import {
+  getAllProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct
+} from '../controllers/products.controller.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -35,6 +40,7 @@ const upload = multer({ storage });
 
 router.get('/', getAllProducts);
 router.post('/', upload.single('imagen'), createProduct);
+router.put('/:id', upload.single('imagen'), updateProduct);
 router.delete('/:id', deleteProduct);
 
 export default router;

@@ -34,6 +34,7 @@ export const getAllProducts = async (req, res) => {
         tallas: { include: { talla: true } }
       }
     });
+
     res.json(products);
   } catch (error) {
     console.error("Error obteniendo productos:", error);
@@ -61,16 +62,22 @@ export const createProduct = async (req, res) => {
     if (req.file) imagenPath = `/uploads/${req.file.filename}`;
     else if (req.body.imagen) imagenPath = req.body.imagen;
 
+    if (!nombre || !String(nombre).trim()) {
+      return res.status(400).json({ error: 'El nombre del producto es obligatorio' });
+    }
+
     const product = await prisma.producto.create({
       data: {
-        nombre: nombre || null,
-        precio: precio ? Number(precio) : null,
-        categoriaId: categoriaId ? Number(categoriaId) : null,
+        nombre: String(nombre).trim(),
+        precio: precio !== '' && precio !== undefined && precio !== null ? Number(precio) : null,
+        categoriaId: categoriaId && categoriaId !== '' ? Number(categoriaId) : null,
         imagen: imagenPath || null
       }
     });
 
     for (const talla of tallas) {
+      if (!Number.isInteger(talla.idTalla) || talla.idTalla <= 0) continue;
+
       await prisma.productoTalla.upsert({
         where: {
           unique_producto_talla: {
@@ -112,14 +119,16 @@ export const createProduct = async (req, res) => {
 
         const product = await prisma.producto.create({
           data: {
-            nombre: nombre || null,
-            precio: precio ? Number(precio) : null,
-            categoriaId: categoriaId ? Number(categoriaId) : null,
+            nombre: nombre ? String(nombre).trim() : null,
+            precio: precio !== '' && precio !== undefined && precio !== null ? Number(precio) : null,
+            categoriaId: categoriaId && categoriaId !== '' ? Number(categoriaId) : null,
             imagen: imagenPath || null
           }
         });
 
         for (const talla of tallas) {
+          if (!Number.isInteger(talla.idTalla) || talla.idTalla <= 0) continue;
+
           await prisma.productoTalla.upsert({
             where: {
               unique_producto_talla: {
@@ -156,6 +165,113 @@ export const createProduct = async (req, res) => {
     return res.status(500).json({
       error: 'Error interno del servidor al crear producto',
       detail: error.message || String(error)
+    });
+  }
+};
+
+export const updateProduct = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID de producto inválido' });
+    }
+
+    const nombre = String(req.body.nombre || '').trim();
+    const precio = req.body.precio === '' || req.body.precio === undefined || req.body.precio === null
+      ? null
+      : Number(req.body.precio);
+
+    const categoriaId = req.body.categoriaId === '' || req.body.categoriaId === undefined || req.body.categoriaId === null
+      ? null
+      : Number(req.body.categoriaId);
+
+    const tallas = parseTallas(req.body.tallas);
+
+    if (!nombre) {
+      return res.status(400).json({ error: 'El nombre del producto es obligatorio' });
+    }
+
+    if (precio !== null && (!Number.isFinite(precio) || precio < 0)) {
+      return res.status(400).json({ error: 'El precio no es válido' });
+    }
+
+    if (categoriaId !== null && (!Number.isInteger(categoriaId) || categoriaId <= 0)) {
+      return res.status(400).json({ error: 'La categoría no es válida' });
+    }
+
+    if (!tallas.length) {
+      return res.status(400).json({ error: 'Selecciona al menos una talla' });
+    }
+
+    const productoActualizado = await prisma.$transaction(async (tx) => {
+      const existente = await tx.producto.findUnique({
+        where: { idProducto: id },
+        select: { idProducto: true }
+      });
+
+      if (!existente) {
+        const error = new Error('Producto no encontrado');
+        error.status = 404;
+        throw error;
+      }
+
+      const imagen = req.file
+        ? `/uploads/${req.file.filename}`
+        : undefined;
+
+      await tx.producto.update({
+        where: { idProducto: id },
+        data: {
+          nombre,
+          precio,
+          categoriaId,
+          ...(imagen ? { imagen } : {})
+        }
+      });
+
+      const idsTalla = tallas.map((t) => t.idTalla);
+
+      await tx.productoTalla.updateMany({
+        where: {
+          idProducto: id,
+          idTalla: { notIn: idsTalla }
+        },
+        data: { stock: 0 }
+      });
+
+      for (const talla of tallas) {
+        await tx.productoTalla.upsert({
+          where: {
+            unique_producto_talla: {
+              idProducto: id,
+              idTalla: talla.idTalla
+            }
+          },
+          update: { stock: Number(talla.stock ?? 0) },
+          create: {
+            idProducto: id,
+            idTalla: talla.idTalla,
+            stock: Number(talla.stock ?? 0)
+          }
+        });
+      }
+
+      return tx.producto.findUnique({
+        where: { idProducto: id },
+        include: {
+          categoria: true,
+          tallas: { include: { talla: true } }
+        }
+      });
+    });
+
+    return res.json(productoActualizado);
+  } catch (error) {
+    console.error('Error actualizando producto:', error);
+
+    return res.status(error.status || 500).json({
+      error: error.message || 'Error al actualizar producto'
     });
   }
 };

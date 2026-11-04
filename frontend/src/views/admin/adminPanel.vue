@@ -223,18 +223,20 @@
               label="Nuevo Producto"
               icon="pi pi-plus"
               severity="primary"
-              @click="mostrarFormNuevoProducto = !mostrarFormNuevoProducto"
+              @click="abrirFormularioNuevo"
             />
           </div>
 
           <!-- Formulario de producto -->
           <Card v-if="mostrarFormNuevoProducto" class="mb-8">
             <template #title>
-              <span class="text-white">Crear Nuevo Producto</span>
+              <span class="text-white">
+                {{ productoEditandoId ? 'Editar Producto' : 'Crear Nuevo Producto' }}
+              </span>
             </template>
 
             <template #content>
-              <form @submit.prevent="crearProducto" class="space-y-6" enctype="multipart/form-data">
+              <form @submit.prevent="guardarProducto" class="space-y-6" enctype="multipart/form-data">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div class="flex flex-col gap-2">
                     <label class="text-slate-300">Nombre</label>
@@ -316,6 +318,9 @@
                     <div v-if="imagePreview" class="mt-2">
                       <img :src="imagePreview" alt="Vista previa" class="w-24 h-24 object-cover rounded" />
                     </div>
+                    <small v-if="productoEditandoId" class="text-slate-400">
+                      Si no seleccionas una imagen nueva, se conservará la actual.
+                    </small>
                   </div>
                 </div>
 
@@ -324,9 +329,13 @@
                     type="button"
                     label="Cancelar"
                     severity="secondary"
-                    @click="cancelarNuevoProducto"
+                    @click="cancelarFormularioProducto"
                   />
-                  <Button type="submit" label="Crear Producto" severity="success" />
+                  <Button
+                    type="submit"
+                    :label="productoEditandoId ? 'Guardar Cambios' : 'Crear Producto'"
+                    severity="success"
+                  />
                 </div>
               </form>
             </template>
@@ -398,7 +407,12 @@
                 <Column header="Acciones">
                   <template #body="slotProps">
                     <div class="flex gap-2">
-                      <Button label="Editar" severity="warning" size="small" disabled />
+                      <Button
+                        label="Editar"
+                        severity="warning"
+                        size="small"
+                        @click="editarProducto(slotProps.data)"
+                      />
                       <Button
                         label="Eliminar"
                         severity="danger"
@@ -620,11 +634,14 @@ const pedidosRecientes = ref([])
 
 const mostrarFormNuevoProducto = ref(false)
 const mostrarFormNuevaCategoria = ref(false)
+const productoEditandoId = ref(null)
 
 const nuevoProducto = ref({
   nombre: '',
-  precio: null,
+  precio: '',
   categoriaId: '',
+  tallaId: '',
+  stock: 0,
   imagen: '',
   imagenFile: null
 })
@@ -698,60 +715,95 @@ const cargarDatos = async () => {
   }
 }
 
-const onFileChange = (event) => {
-  const file = event?.files?.[0] || event?.target?.files?.[0] || null
-
-  if (imagePreview.value) {
+const revocarVistaPrevia = () => {
+  if (imagePreview.value?.startsWith('blob:')) {
     URL.revokeObjectURL(imagePreview.value)
-  }
-
-  if (file) {
-    nuevoProducto.value.imagenFile = file
-    imagePreview.value = URL.createObjectURL(file)
-  } else {
-    nuevoProducto.value.imagenFile = null
-    imagePreview.value = null
   }
 }
 
 const limpiarFormularioProducto = () => {
+  revocarVistaPrevia()
+
+  productoEditandoId.value = null
   nuevoProducto.value = {
     nombre: '',
-    precio: null,
+    precio: '',
     categoriaId: '',
+    tallaId: '',
+    stock: 0,
     imagen: '',
     imagenFile: null
   }
-
   tallasSeleccionadas.value = []
   stockPorTalla.value = {}
-
-  if (imagePreview.value) {
-    URL.revokeObjectURL(imagePreview.value)
-    imagePreview.value = null
-  }
+  imagePreview.value = null
 }
 
-const cancelarNuevoProducto = () => {
+const abrirFormularioNuevo = () => {
+  limpiarFormularioProducto()
+  mostrarFormNuevoProducto.value = true
+}
+
+const cancelarFormularioProducto = () => {
   mostrarFormNuevoProducto.value = false
   limpiarFormularioProducto()
 }
 
-const crearProducto = async () => {
-  const tallasDelProducto = tallasSeleccionadas.value
-    .map((idTalla) => ({
-      idTalla: Number(idTalla),
-      stock: Number(stockPorTalla.value[idTalla] ?? 0)
-    }))
-    .filter(
-      (talla) =>
-        Number.isInteger(talla.idTalla) &&
-        talla.idTalla > 0 &&
-        Number.isInteger(talla.stock) &&
-        talla.stock >= 0
-    )
+const editarProducto = (producto) => {
+  revocarVistaPrevia()
 
-  if (!nuevoProducto.value.nombre.trim()) {
+  productoEditandoId.value = producto.idProducto
+  nuevoProducto.value = {
+    nombre: producto.nombre || '',
+    precio: producto.precio === null ? null : Number(producto.precio),
+    categoriaId: producto.categoriaId || '',
+    tallaId: '',
+    stock: 0,
+    imagen: producto.imagen || '',
+    imagenFile: null
+  }
+
+  const tallasProducto = producto.tallas || []
+
+  // Incluye también tallas con stock 0 para que el admin pueda editarlas.
+  tallasSeleccionadas.value = tallasProducto.map(
+    (productoTalla) => productoTalla.idTalla
+  )
+
+  stockPorTalla.value = Object.fromEntries(
+    tallasProducto.map((productoTalla) => [
+      productoTalla.idTalla,
+      Number(productoTalla.stock || 0)
+    ])
+  )
+
+  imagePreview.value = producto.imagen
+    ? getImageUrl(producto.imagen)
+    : null
+
+  mostrarFormNuevoProducto.value = true
+  seccionActiva.value = 'productos'
+}
+
+const onFileChange = (event) => {
+  const file = event?.files?.[0] || event?.target?.files?.[0] || null
+
+  revocarVistaPrevia()
+  nuevoProducto.value.imagenFile = file
+
+  if (file) {
+    imagePreview.value = URL.createObjectURL(file)
+  } else if (productoEditandoId.value && nuevoProducto.value.imagen) {
+    imagePreview.value = getImageUrl(nuevoProducto.value.imagen)
+  } else {
+    imagePreview.value = null
+  }
+}
+
+const guardarProducto = async () => {
+  const nombre = String(nuevoProducto.value.nombre || '').trim()
+
+  if (!nombre) {
     toast.add({
       severity: 'warn',
       summary: 'Nombre requerido',
@@ -761,42 +813,70 @@ const crearProducto = async () => {
     return
   }
 
-  if (tallasDelProducto.length === 0) {
+  const tallasDelProducto = tallasSeleccionadas.value.map((idTalla) => ({
+    idTalla: Number(idTalla),
+    stock: Number(stockPorTalla.value[idTalla] ?? 0)
+  }))
+
+  const tallasInvalidas = tallasDelProducto.some(
+    (talla) =>
+      !Number.isInteger(talla.idTalla) ||
+      talla.idTalla <= 0 ||
+      !Number.isInteger(talla.stock) ||
+      talla.stock < 0
+  )
+
+  if (tallasDelProducto.length === 0 || tallasInvalidas) {
     toast.add({
       severity: 'warn',
-      summary: 'Sin tallas',
-      detail: 'Selecciona al menos una talla e indica su stock.',
+      summary: 'Tallas y stock',
+      detail: 'Selecciona al menos una talla e indica un stock válido.',
       life: 2500
     })
     return
   }
 
+  const precio = nuevoProducto.value.precio
+  if (precio !== null && precio !== '' && (!Number.isFinite(Number(precio)) || Number(precio) < 0)) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Precio inválido',
+      detail: 'El precio debe ser un número igual o mayor que cero.',
+      life: 2500
+    })
+    return
+  }
+
+  const editando = Boolean(productoEditandoId.value)
+
   try {
     const form = new FormData()
-    form.append('nombre', nuevoProducto.value.nombre.trim())
-    form.append('precio', String(nuevoProducto.value.precio ?? ''))
+    form.append('nombre', nombre)
+    form.append('precio', String(precio ?? ''))
     form.append('categoriaId', String(nuevoProducto.value.categoriaId ?? ''))
     form.append('tallas', JSON.stringify(tallasDelProducto))
 
     if (nuevoProducto.value.imagenFile) {
       form.append('imagen', nuevoProducto.value.imagenFile)
-    } else if (nuevoProducto.value.imagen) {
-      form.append('imagen', nuevoProducto.value.imagen)
     }
 
-    const res = await fetch('http://localhost:3000/api/products', {
-      method: 'POST',
+    const url = editando
+      ? `http://localhost:3000/api/products/${productoEditandoId.value}`
+      : 'http://localhost:3000/api/products'
+
+    const res = await fetch(url, {
+      method: editando ? 'PUT' : 'POST',
       body: form
     })
 
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}))
-      console.error('Error creando producto:', error)
+    const resultado = await res.json().catch(() => ({}))
 
+    if (!res.ok) {
+      console.error('Error guardando producto:', resultado)
       toast.add({
         severity: 'error',
         summary: 'Error',
-        detail: error.error || 'No se pudo crear el producto.',
+        detail: resultado.error || 'No se pudo guardar el producto.',
         life: 3000
       })
       return
@@ -808,17 +888,18 @@ const crearProducto = async () => {
 
     toast.add({
       severity: 'success',
-      summary: 'Producto creado',
-      detail: 'El producto y el stock por talla se registraron correctamente.',
+      summary: editando ? 'Producto actualizado' : 'Producto creado',
+      detail: editando
+        ? 'Se guardaron los cambios del producto y su stock por talla.'
+        : 'El producto se registró correctamente.',
       life: 2500
     })
   } catch (error) {
-    console.error('Error creando producto:', error)
-
+    console.error('Error guardando producto:', error)
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Ocurrió un problema al crear el producto.',
+      detail: 'Ocurrió un problema al guardar el producto.',
       life: 2500
     })
   }
@@ -860,14 +941,14 @@ const confirmarAccion = async () => {
       { method: 'DELETE' }
     )
 
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}))
-      console.error('Error eliminando producto:', error)
+    const resultado = await res.json().catch(() => ({}))
 
+    if (!res.ok) {
+      console.error('Error eliminando producto:', resultado)
       toast.add({
         severity: 'error',
         summary: 'Error',
-        detail: error.error || 'No se pudo eliminar el producto.',
+        detail: resultado.error || 'No se pudo eliminar el producto.',
         life: 2500
       })
       return
@@ -884,7 +965,6 @@ const confirmarAccion = async () => {
     })
   } catch (error) {
     console.error('Error eliminando producto:', error)
-
     toast.add({
       severity: 'error',
       summary: 'Error',
