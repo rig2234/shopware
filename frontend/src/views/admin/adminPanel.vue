@@ -94,6 +94,7 @@
 
     <main class="ml-64 flex-1 overflow-auto">
       <div class="p-8">
+        <!-- Dashboard -->
         <div v-if="seccionActiva === 'dashboard'">
           <div class="mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">Dashboard</h1>
@@ -226,7 +227,7 @@
             />
           </div>
 
-          <!-- Formulario -->
+          <!-- Formulario de producto -->
           <Card v-if="mostrarFormNuevoProducto" class="mb-8">
             <template #title>
               <span class="text-white">Crear Nuevo Producto</span>
@@ -247,6 +248,7 @@
                       mode="decimal"
                       :minFractionDigits="2"
                       :maxFractionDigits="2"
+                      :min="0"
                       placeholder="0.00"
                     />
                   </div>
@@ -267,7 +269,7 @@
                       Tallas y stock
                     </label>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div v-if="tallas.length" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div
                         v-for="talla in tallas"
                         :key="talla.idTalla"
@@ -287,6 +289,8 @@
                         <InputNumber
                           v-model="stockPorTalla[talla.idTalla]"
                           :min="0"
+                          :minFractionDigits="0"
+                          :maxFractionDigits="0"
                           :showButtons="true"
                           placeholder="Stock"
                           :disabled="!tallasSeleccionadas.includes(talla.idTalla)"
@@ -294,6 +298,10 @@
                         />
                       </div>
                     </div>
+
+                    <p v-else class="text-sm text-amber-300">
+                      No se pudieron cargar las tallas. Verifica el endpoint /api/tallas.
+                    </p>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -306,7 +314,7 @@
                       @select="onFileChange"
                     />
                     <div v-if="imagePreview" class="mt-2">
-                      <img :src="imagePreview" alt="Preview" class="w-24 h-24 object-cover rounded" />
+                      <img :src="imagePreview" alt="Vista previa" class="w-24 h-24 object-cover rounded" />
                     </div>
                   </div>
                 </div>
@@ -316,7 +324,7 @@
                     type="button"
                     label="Cancelar"
                     severity="secondary"
-                    @click="mostrarFormNuevoProducto = false"
+                    @click="cancelarNuevoProducto"
                   />
                   <Button type="submit" label="Crear Producto" severity="success" />
                 </div>
@@ -324,7 +332,7 @@
             </template>
           </Card>
 
-          <!-- Tabla -->
+          <!-- Tabla de productos -->
           <Card>
             <template #content>
               <DataTable
@@ -371,10 +379,26 @@
                   </template>
                 </Column>
 
+                <Column header="Stock por talla">
+                  <template #body="slotProps">
+                    <div v-if="slotProps.data.tallas?.length" class="flex flex-wrap gap-2">
+                      <span
+                        v-for="productoTalla in slotProps.data.tallas"
+                        :key="productoTalla.idProductoTalla"
+                        class="bg-slate-700 text-slate-200 px-2 py-1 rounded text-sm"
+                      >
+                        {{ productoTalla.talla?.nombre || 'Talla' }}:
+                        {{ productoTalla.stock ?? 0 }}
+                      </span>
+                    </div>
+                    <span v-else class="text-slate-400">Sin tallas</span>
+                  </template>
+                </Column>
+
                 <Column header="Acciones">
                   <template #body="slotProps">
                     <div class="flex gap-2">
-                      <Button label="Editar" severity="warning" size="small" />
+                      <Button label="Editar" severity="warning" size="small" disabled />
                       <Button
                         label="Eliminar"
                         severity="danger"
@@ -552,7 +576,7 @@
       </div>
     </main>
 
-    <!-- Modal de Confirmación -->
+    <!-- Modal de confirmación -->
     <Dialog v-model:visible="mostrarConfirmacion" modal header="Confirmación">
       <p class="text-slate-300">{{ confirmacion.mensaje }}</p>
 
@@ -581,6 +605,7 @@ import { useToast } from 'primevue/usetoast'
 
 const router = useRouter()
 const toast = useToast()
+
 const seccionActiva = ref('dashboard')
 const usuario = ref(null)
 
@@ -595,25 +620,38 @@ const pedidosRecientes = ref([])
 
 const mostrarFormNuevoProducto = ref(false)
 const mostrarFormNuevaCategoria = ref(false)
+
 const nuevoProducto = ref({
   nombre: '',
-  precio: '',
+  precio: null,
   categoriaId: '',
-  tallaId: '',
-  stock: 0,
   imagen: '',
   imagenFile: null
 })
+
 const nuevaCategoria = ref({ nombre: '' })
 
 const mostrarConfirmacion = ref(false)
-const confirmacion = ref({ titulo: '', mensaje: '', boton: '', accion: null, datos: null })
+const confirmacion = ref({
+  titulo: '',
+  mensaje: '',
+  boton: '',
+  accion: null,
+  datos: null
+})
 
-const stats = ref({ productos: 0, usuarios: 0, pedidos: 0, ventas: 0, bajo_stock: 0 })
+const stats = ref({
+  productos: 0,
+  usuarios: 0,
+  pedidos: 0,
+  ventas: 0,
+  bajo_stock: 0
+})
 
 const imagePreview = ref(null)
 
 const formatPrice = (price) => parseFloat(price || 0).toFixed(2)
+
 const formatDate = (date) =>
   new Date(date).toLocaleDateString('es-ES', {
     year: 'numeric',
@@ -650,17 +688,22 @@ const cargarDatos = async () => {
       tallas.value = await resTallas.json()
     }
 
+    // Estos valores siguen siendo de ejemplo hasta conectar sus endpoints.
     stats.value.usuarios = 5
     stats.value.pedidos = 12
     stats.value.ventas = 1250.5
     stats.value.bajo_stock = 3
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error cargando datos:', error)
   }
 }
 
 const onFileChange = (event) => {
   const file = event?.files?.[0] || event?.target?.files?.[0] || null
+
+  if (imagePreview.value) {
+    URL.revokeObjectURL(imagePreview.value)
+  }
 
   if (file) {
     nuevoProducto.value.imagenFile = file
@@ -671,18 +714,68 @@ const onFileChange = (event) => {
   }
 }
 
-const crearProducto = async () => {
-  try {
-    const form = new FormData()
-    form.append('nombre', nuevoProducto.value.nombre)
-    form.append('precio', nuevoProducto.value.precio)
-    form.append('categoriaId', nuevoProducto.value.categoriaId)
+const limpiarFormularioProducto = () => {
+  nuevoProducto.value = {
+    nombre: '',
+    precio: null,
+    categoriaId: '',
+    imagen: '',
+    imagenFile: null
+  }
 
-    const tallasDelProducto = tallasSeleccionadas.value.map((idTalla) => ({
+  tallasSeleccionadas.value = []
+  stockPorTalla.value = {}
+
+  if (imagePreview.value) {
+    URL.revokeObjectURL(imagePreview.value)
+    imagePreview.value = null
+  }
+}
+
+const cancelarNuevoProducto = () => {
+  mostrarFormNuevoProducto.value = false
+  limpiarFormularioProducto()
+}
+
+const crearProducto = async () => {
+  const tallasDelProducto = tallasSeleccionadas.value
+    .map((idTalla) => ({
       idTalla: Number(idTalla),
       stock: Number(stockPorTalla.value[idTalla] ?? 0)
     }))
+    .filter(
+      (talla) =>
+        Number.isInteger(talla.idTalla) &&
+        talla.idTalla > 0 &&
+        Number.isInteger(talla.stock) &&
+        talla.stock >= 0
+    )
 
+  if (!nuevoProducto.value.nombre.trim()) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Nombre requerido',
+      detail: 'Escribe el nombre del producto.',
+      life: 2500
+    })
+    return
+  }
+
+  if (tallasDelProducto.length === 0) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Sin tallas',
+      detail: 'Selecciona al menos una talla e indica su stock.',
+      life: 2500
+    })
+    return
+  }
+
+  try {
+    const form = new FormData()
+    form.append('nombre', nuevoProducto.value.nombre.trim())
+    form.append('precio', String(nuevoProducto.value.precio ?? ''))
+    form.append('categoriaId', String(nuevoProducto.value.categoriaId ?? ''))
     form.append('tallas', JSON.stringify(tallasDelProducto))
 
     if (nuevoProducto.value.imagenFile) {
@@ -696,39 +789,32 @@ const crearProducto = async () => {
       body: form
     })
 
-    if (res.ok) {
-      mostrarFormNuevoProducto.value = false
-      nuevoProducto.value = {
-        nombre: '',
-        precio: '',
-        categoriaId: '',
-        tallaId: '',
-        stock: 0,
-        imagen: '',
-        imagenFile: null
-      }
-      tallasSeleccionadas.value = []
-      stockPorTalla.value = {}
-      imagePreview.value = null
-      cargarDatos()
-      toast.add({
-        severity: 'success',
-        summary: 'Producto creado',
-        detail: 'El producto se registró correctamente.',
-        life: 2500
-      })
-    } else {
-      const err = await res.json()
-      console.error('Error creando producto:', err)
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      console.error('Error creando producto:', error)
+
       toast.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'No se pudo crear el producto.',
-        life: 2500
+        detail: error.error || 'No se pudo crear el producto.',
+        life: 3000
       })
+      return
     }
+
+    mostrarFormNuevoProducto.value = false
+    limpiarFormularioProducto()
+    await cargarDatos()
+
+    toast.add({
+      severity: 'success',
+      summary: 'Producto creado',
+      detail: 'El producto y el stock por talla se registraron correctamente.',
+      life: 2500
+    })
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error creando producto:', error)
+
     toast.add({
       severity: 'error',
       summary: 'Error',
@@ -766,49 +852,46 @@ const eliminarCategoriaConfirm = (categoria) => {
 }
 
 const confirmarAccion = async () => {
-  if (confirmacion.value.accion === 'eliminarProducto') {
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/products/${confirmacion.value.datos.idProducto}`,
-        { method: 'DELETE' }
-      )
+  if (confirmacion.value.accion !== 'eliminarProducto') return
 
-      if (res.ok) {
-        mostrarConfirmacion.value = false
-        cargarDatos()
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/products/${confirmacion.value.datos.idProducto}`,
+      { method: 'DELETE' }
+    )
 
-        toast.add({
-          severity: 'success',
-          summary: 'Producto eliminado',
-          detail: 'El producto se eliminó correctamente.',
-          life: 2500
-        })
-      } else {
-        const err = await res.json()
-        console.error(err)
-
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo eliminar el producto.',
-          life: 2500
-        })
-      }
-    } catch (error) {
-      console.error('Error:', error)
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      console.error('Error eliminando producto:', error)
 
       toast.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Ocurrió un problema al eliminar el producto.',
+        detail: error.error || 'No se pudo eliminar el producto.',
         life: 2500
       })
+      return
     }
-  }
-}
 
-const cancelarAccion = () => {
-  mostrarConfirmacion.value = false
+    mostrarConfirmacion.value = false
+    await cargarDatos()
+
+    toast.add({
+      severity: 'success',
+      summary: 'Producto eliminado',
+      detail: 'El producto se eliminó correctamente.',
+      life: 2500
+    })
+  } catch (error) {
+    console.error('Error eliminando producto:', error)
+
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Ocurrió un problema al eliminar el producto.',
+      life: 2500
+    })
+  }
 }
 
 const cerrarSesion = () => {
@@ -820,7 +903,15 @@ const cerrarSesion = () => {
 
 onMounted(() => {
   const usuarioGuardado = localStorage.getItem('usuario')
-  if (usuarioGuardado) usuario.value = JSON.parse(usuarioGuardado)
+
+  if (usuarioGuardado) {
+    try {
+      usuario.value = JSON.parse(usuarioGuardado)
+    } catch (error) {
+      console.error('No se pudo leer el usuario guardado:', error)
+    }
+  }
+
   cargarDatos()
 })
 </script>

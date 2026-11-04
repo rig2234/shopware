@@ -4,6 +4,28 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
+const parseTallas = (raw) => {
+  if (!raw) return [];
+
+  let parsed = raw;
+  if (typeof raw === 'string') {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter((item) => item && Number(item.idTalla))
+    .map((item) => ({
+      idTalla: Number(item.idTalla),
+      stock: Number(item.stock ?? 0)
+    }));
+};
+
 export const getAllProducts = async (req, res) => {
   try {
     const products = await prisma.producto.findMany({
@@ -32,7 +54,8 @@ async function fixProductoSequence() {
 
 export const createProduct = async (req, res) => {
   try {
-    const { nombre, precio, categoriaId, tallaId, stock } = req.body;
+    const { nombre, precio, categoriaId } = req.body;
+    const tallas = parseTallas(req.body.tallas);
 
     let imagenPath = null;
     if (req.file) imagenPath = `/uploads/${req.file.filename}`;
@@ -47,21 +70,23 @@ export const createProduct = async (req, res) => {
       }
     });
 
-    if (tallaId) {
-      try {
-        await prisma.productoTalla.create({
-          data: {
+    for (const talla of tallas) {
+      await prisma.productoTalla.upsert({
+        where: {
+          unique_producto_talla: {
             idProducto: product.idProducto,
-            idTalla: Number(tallaId),
-            stock: stock ? Number(stock) : 0
+            idTalla: talla.idTalla
           }
-        });
-      } catch (ptError) {
-        await prisma.productoTalla.updateMany({
-          where: { idProducto: product.idProducto, idTalla: Number(tallaId) },
-          data: { stock: stock ? Number(stock) : 0 }
-        });
-      }
+        },
+        update: {
+          stock: Number(talla.stock ?? 0)
+        },
+        create: {
+          idProducto: product.idProducto,
+          idTalla: talla.idTalla,
+          stock: Number(talla.stock ?? 0)
+        }
+      });
     }
 
     const created = await prisma.producto.findUnique({
@@ -69,7 +94,7 @@ export const createProduct = async (req, res) => {
       include: { categoria: true, tallas: { include: { talla: true } } }
     });
 
-    res.status(201).json(created);
+    return res.status(201).json(created);
   } catch (error) {
     console.error('Error creando producto:', error);
 
@@ -78,7 +103,9 @@ export const createProduct = async (req, res) => {
         console.warn('P2002 detectado en id_producto — intentando corregir secuencia y reintentar');
         await fixProductoSequence();
 
-        const { nombre, precio, categoriaId, tallaId, stock } = req.body;
+        const { nombre, precio, categoriaId } = req.body;
+        const tallas = parseTallas(req.body.tallas);
+
         let imagenPath = null;
         if (req.file) imagenPath = `/uploads/${req.file.filename}`;
         else if (req.body.imagen) imagenPath = req.body.imagen;
@@ -92,9 +119,22 @@ export const createProduct = async (req, res) => {
           }
         });
 
-        if (tallaId) {
-          await prisma.productoTalla.create({
-            data: { idProducto: product.idProducto, idTalla: Number(tallaId), stock: stock ? Number(stock) : 0 }
+        for (const talla of tallas) {
+          await prisma.productoTalla.upsert({
+            where: {
+              unique_producto_talla: {
+                idProducto: product.idProducto,
+                idTalla: talla.idTalla
+              }
+            },
+            update: {
+              stock: Number(talla.stock ?? 0)
+            },
+            create: {
+              idProducto: product.idProducto,
+              idTalla: talla.idTalla,
+              stock: Number(talla.stock ?? 0)
+            }
           });
         }
 
@@ -102,14 +142,21 @@ export const createProduct = async (req, res) => {
           where: { idProducto: product.idProducto },
           include: { categoria: true, tallas: { include: { talla: true } } }
         });
+
         return res.status(201).json(created);
       } catch (retryError) {
         console.error('Reintento fallido al crear producto:', retryError);
-        return res.status(500).json({ error: 'Error al crear producto (reintento fallido)', detail: String(retryError) });
+        return res.status(500).json({
+          error: 'Error al crear producto (reintento fallido)',
+          detail: String(retryError)
+        });
       }
     }
 
-    res.status(500).json({ error: 'Error interno del servidor al crear producto', detail: error.message || String(error) });
+    return res.status(500).json({
+      error: 'Error interno del servidor al crear producto',
+      detail: error.message || String(error)
+    });
   }
 };
 
@@ -129,7 +176,6 @@ export const deleteProduct = async (req, res) => {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
 
-    // borrar imagen del disco si existe
     if (product.imagen && !product.imagen.startsWith('http')) {
       const relativePath = product.imagen.replace(/^\/+/, '');
       const filePath = path.resolve(process.cwd(), 'backend', relativePath);
