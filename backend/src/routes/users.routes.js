@@ -1,9 +1,24 @@
-import { Router } from 'express';
-import { getAllUsers } from '../controllers/users.controller.js';
-import { verificarToken, esAdmin } from '../middlewares/auth.middleware.js';
+import { Router } from 'express'
+import {
+  getAllUsers,
+  getAllRoles,
+  createUser,
+  updateUser,
+  deleteUser
+} from '../controllers/users.controller.js'
+import {
+  verificarToken,
+  esAdmin
+} from '../middlewares/auth.middleware.js'
 
-const router = Router();
+const router = Router()
 
-router.get('/', verificarToken, esAdmin, getAllUsers);
+router.use(verificarToken, esAdmin)
 
-export default router;
+router.get('/roles', getAllRoles)
+router.get('/', getAllUsers)
+router.post('/', createUser)
+router.put('/:id', updateUser)
+router.delete('/:id', deleteUser)
+
+export default router

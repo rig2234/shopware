@@ -429,14 +429,105 @@
 
         <!-- Usuarios -->
         <div v-if="seccionActiva === 'usuarios'">
-          <div class="mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2">Usuarios</h1>
-            <p class="text-slate-400">Gestiona los usuarios registrados</p>
+          <div class="flex justify-between items-center mb-8">
+            <div>
+              <h1 class="text-4xl font-bold text-white mb-2">Usuarios</h1>
+              <p class="text-slate-400">Gestiona los usuarios registrados</p>
+            </div>
+
+            <Button
+              label="Nuevo Usuario"
+              icon="pi pi-plus"
+              severity="primary"
+              @click="abrirFormularioUsuario"
+            />
           </div>
+
+          <Card v-if="mostrarFormularioUsuario" class="mb-8">
+            <template #title>
+              <span class="text-white">
+                {{ usuarioEditandoId ? 'Editar Usuario' : 'Crear Usuario' }}
+              </span>
+            </template>
+
+            <template #content>
+              <form @submit.prevent="guardarUsuario" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Nombre</label>
+                    <InputText v-model="formUsuario.nombre" placeholder="Nombre del usuario" />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Correo</label>
+                    <InputText
+                      v-model="formUsuario.correo"
+                      type="email"
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">
+                      Contraseña
+                      <span v-if="usuarioEditandoId">(dejar vacía para conservarla)</span>
+                    </label>
+                    <InputText
+                      v-model="formUsuario.contrasena"
+                      type="password"
+                      :placeholder="usuarioEditandoId ? 'Sin cambios' : 'Mínimo 8 caracteres'"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Rol</label>
+                    <Dropdown
+                      v-model="formUsuario.idRol"
+                      :options="roles"
+                      optionLabel="nombreRol"
+                      optionValue="idRol"
+                      placeholder="Selecciona un rol"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Estado</label>
+                    <Dropdown
+                      v-model="formUsuario.estatus"
+                      :options="estadosUsuario"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Selecciona un estado"
+                    />
+                  </div>
+                </div>
+
+                <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                  <Button
+                    type="button"
+                    label="Cancelar"
+                    severity="secondary"
+                    @click="cancelarFormularioUsuario"
+                  />
+                  <Button
+                    type="submit"
+                    :label="usuarioEditandoId ? 'Guardar Cambios' : 'Crear Usuario'"
+                    severity="success"
+                  />
+                </div>
+              </form>
+            </template>
+          </Card>
 
           <Card>
             <template #content>
-              <DataTable :value="usuarios" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+              <DataTable
+                :value="usuarios"
+                tableStyle="min-width: 100%"
+                paginator
+                :rows="10"
+                responsiveLayout="scroll"
+              >
                 <Column field="idUsuario" header="ID">
                   <template #body="slotProps">
                     <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
@@ -447,7 +538,8 @@
 
                 <Column field="nombre" header="Nombre" />
                 <Column field="correo" header="Correo" />
-                <Column field="rol" header="Rol">
+
+                <Column header="Rol">
                   <template #body="slotProps">
                     {{ slotProps.data.rol?.nombreRol || 'N/A' }}
                   </template>
@@ -456,9 +548,28 @@
                 <Column field="estatus" header="Estado">
                   <template #body="slotProps">
                     <Tag
-                      :value="slotProps.data.estatus"
+                      :value="slotProps.data.estatus || 'Sin estado'"
                       :severity="slotProps.data.estatus === 'activo' ? 'success' : 'danger'"
                     />
+                  </template>
+                </Column>
+
+                <Column header="Acciones">
+                  <template #body="slotProps">
+                    <div class="flex gap-2">
+                      <Button
+                        label="Editar"
+                        severity="warning"
+                        size="small"
+                        @click="editarUsuario(slotProps.data)"
+                      />
+                      <Button
+                        label="Eliminar"
+                        severity="danger"
+                        size="small"
+                        @click="eliminarUsuarioConfirm(slotProps.data)"
+                      />
+                    </div>
                   </template>
                 </Column>
               </DataTable>
@@ -526,7 +637,7 @@
               label="Nueva Categoría"
               icon="pi pi-plus"
               severity="primary"
-              @click="mostrarFormNuevaCategoria = !mostrarFormNuevaCategoria"
+              @click="abrirFormularioCategoria"
             />
           </div>
 
@@ -537,9 +648,28 @@
 
             <template #content>
               <form @submit.prevent="crearCategoria" class="space-y-6">
-                <div>
-                  <label class="text-slate-300 block mb-2">Nombre</label>
-                  <InputText v-model="nuevaCategoria.nombre" placeholder="Ej: Camisetas" />
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="text-slate-300 block mb-2">Nombre de la categoría</label>
+                    <InputText
+                      v-model="nuevaCategoria.nombre"
+                      placeholder="Ej: Camisetas"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="text-slate-300 block mb-2">Categoría padre</label>
+                    <Dropdown
+                      v-model="nuevaCategoria.parentId"
+                      :options="categoriasPadre"
+                      optionLabel="nombre"
+                      optionValue="idCategoria"
+                      placeholder="Selecciona Hombre o Mujer"
+                    />
+                    <p v-if="!categoriasPadre.length" class="text-sm text-amber-300 mt-2">
+                      No se encontraron categorías raíz Hombre/Mujer. Créelas primero en la base de datos.
+                    </p>
+                  </div>
                 </div>
 
                 <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
@@ -547,7 +677,7 @@
                     type="button"
                     label="Cancelar"
                     severity="secondary"
-                    @click="mostrarFormNuevaCategoria = false"
+                    @click="cancelarFormularioCategoria"
                   />
                   <Button type="submit" label="Crear Categoría" severity="success" />
                 </div>
@@ -557,7 +687,13 @@
 
           <Card>
             <template #content>
-              <DataTable :value="categorias" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+              <DataTable
+                :value="categorias"
+                tableStyle="min-width: 100%"
+                paginator
+                :rows="10"
+                responsiveLayout="scroll"
+              >
                 <Column field="idCategoria" header="ID">
                   <template #body="slotProps">
                     <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
@@ -566,7 +702,18 @@
                   </template>
                 </Column>
 
-                <Column field="nombre" header="Nombre" />
+                <Column header="Categoría">
+                  <template #body="slotProps">
+                    {{ slotProps.data.nombreCompleto || slotProps.data.nombre }}
+                  </template>
+                </Column>
+
+                <Column header="Padre">
+                  <template #body="slotProps">
+                    {{ slotProps.data.parent?.nombre || 'Categoría raíz' }}
+                  </template>
+                </Column>
+
                 <Column field="productos" header="Productos">
                   <template #body="slotProps">
                     {{ slotProps.data.productos?.length || 0 }}
@@ -613,7 +760,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 
@@ -631,12 +778,30 @@ const tallas = ref([])
 const tallasSeleccionadas = ref([])
 const stockPorTalla = ref({})
 const pedidosRecientes = ref([])
+const roles = ref([])
 
 const mostrarFormNuevoProducto = ref(false)
 const mostrarFormNuevaCategoria = ref(false)
+const mostrarFormularioUsuario = ref(false)
 const productoEditandoId = ref(null)
+const usuarioEditandoId = ref(null)
 
-const nuevoProducto = ref({
+const estadosUsuario = [
+  { label: 'Activo', value: 'activo' },
+  { label: 'Inactivo', value: 'inactivo' }
+]
+
+const formularioUsuarioVacio = () => ({
+  nombre: '',
+  correo: '',
+  contrasena: '',
+  idRol: null,
+  estatus: 'activo'
+})
+
+const formUsuario = ref(formularioUsuarioVacio())
+
+const nuevoProductoVacio = () => ({
   nombre: '',
   precio: '',
   categoriaId: '',
@@ -646,7 +811,21 @@ const nuevoProducto = ref({
   imagenFile: null
 })
 
-const nuevaCategoria = ref({ nombre: '' })
+const nuevoProducto = ref(nuevoProductoVacio())
+
+const nuevaCategoria = ref({
+  nombre: '',
+  parentId: null
+})
+
+const categoriasPadre = computed(() =>
+  categorias.value.filter((categoria) => {
+    const nombre = String(categoria.nombre || '').trim().toLowerCase()
+
+    return categoria.parentId == null &&
+      ['hombre', 'mujer'].includes(nombre)
+  })
+)
 
 const mostrarConfirmacion = ref(false)
 const confirmacion = ref({
@@ -669,14 +848,17 @@ const imagePreview = ref(null)
 
 const formatPrice = (price) => parseFloat(price || 0).toFixed(2)
 
-const formatDate = (date) =>
-  new Date(date).toLocaleDateString('es-ES', {
+const formatDate = (date) => {
+  if (!date) return 'N/A'
+
+  return new Date(date).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
   })
+}
 
 const getImageUrl = (image) => {
   if (!image) return 'https://placehold.co/120x120/1f2937/f8fafc?text=No+Image'
@@ -691,12 +873,14 @@ const cargarDatos = async () => {
       ? { Authorization: `Bearer ${token}` }
       : {}
 
-    const [resProducts, resCategories, resTallas, resUsers] = await Promise.all([
-      fetch('http://localhost:3000/api/products'),
-      fetch('http://localhost:3000/api/categories'),
-      fetch('http://localhost:3000/api/tallas'),
-      fetch('http://localhost:3000/api/users', { headers })
-    ])
+    const [resProducts, resCategories, resTallas, resUsers, resRoles] =
+      await Promise.all([
+        fetch('http://localhost:3000/api/products'),
+        fetch('http://localhost:3000/api/categories'),
+        fetch('http://localhost:3000/api/tallas'),
+        fetch('http://localhost:3000/api/users', { headers }),
+        fetch('http://localhost:3000/api/users/roles', { headers })
+      ])
 
     if (resProducts.ok) {
       productos.value = await resProducts.json()
@@ -717,6 +901,22 @@ const cargarDatos = async () => {
     } else {
       const error = await resUsers.json().catch(() => ({}))
       console.error('Error cargando usuarios:', error)
+
+      if (resUsers.status === 401 || resUsers.status === 403) {
+        toast.add({
+          severity: 'warn',
+          summary: 'Acceso denegado',
+          detail: error.message || 'Inicia sesión con una cuenta de administrador.',
+          life: 3500
+        })
+      }
+    }
+
+    if (resRoles.ok) {
+      roles.value = await resRoles.json()
+    } else {
+      const error = await resRoles.json().catch(() => ({}))
+      console.error('Error cargando roles:', error)
     }
 
     // Estos valores siguen siendo de ejemplo hasta conectar sus endpoints.
@@ -725,6 +925,12 @@ const cargarDatos = async () => {
     stats.value.bajo_stock = 3
   } catch (error) {
     console.error('Error cargando datos:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error de conexión',
+      detail: 'No se pudieron cargar los datos. Verifica que el backend esté iniciado.',
+      life: 3500
+    })
   }
 }
 
@@ -738,15 +944,7 @@ const limpiarFormularioProducto = () => {
   revocarVistaPrevia()
 
   productoEditandoId.value = null
-  nuevoProducto.value = {
-    nombre: '',
-    precio: '',
-    categoriaId: '',
-    tallaId: '',
-    stock: 0,
-    imagen: '',
-    imagenFile: null
-  }
+  nuevoProducto.value = nuevoProductoVacio()
   tallasSeleccionadas.value = []
   stockPorTalla.value = {}
   imagePreview.value = null
@@ -850,7 +1048,11 @@ const guardarProducto = async () => {
   }
 
   const precio = nuevoProducto.value.precio
-  if (precio !== null && precio !== '' && (!Number.isFinite(Number(precio)) || Number(precio) < 0)) {
+  if (
+    precio !== null &&
+    precio !== '' &&
+    (!Number.isFinite(Number(precio)) || Number(precio) < 0)
+  ) {
     toast.add({
       severity: 'warn',
       summary: 'Precio inválido',
@@ -918,9 +1120,225 @@ const guardarProducto = async () => {
   }
 }
 
-const crearCategoria = async () => {
-  alert('Implementar endpoint de categorías')
+const abrirFormularioUsuario = () => {
+  usuarioEditandoId.value = null
+  formUsuario.value = formularioUsuarioVacio()
+  mostrarFormularioUsuario.value = true
+}
+
+const cancelarFormularioUsuario = () => {
+  mostrarFormularioUsuario.value = false
+  usuarioEditandoId.value = null
+  formUsuario.value = formularioUsuarioVacio()
+}
+
+const editarUsuario = (user) => {
+  usuarioEditandoId.value = user.idUsuario
+  formUsuario.value = {
+    nombre: user.nombre || '',
+    correo: user.correo || '',
+    contrasena: '',
+    idRol: user.idRol,
+    estatus: user.estatus || 'activo'
+  }
+  mostrarFormularioUsuario.value = true
+}
+
+const guardarUsuario = async () => {
+  const nombre = formUsuario.value.nombre.trim()
+  const correo = formUsuario.value.correo.trim()
+  const contrasena = formUsuario.value.contrasena
+  const editando = Boolean(usuarioEditandoId.value)
+  const token = localStorage.getItem('token')
+
+  if (!nombre || !correo || !formUsuario.value.idRol) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Datos incompletos',
+      detail: 'Completa el nombre, correo y rol.',
+      life: 2500
+    })
+    return
+  }
+
+  if (!token) {
+    toast.add({
+      severity: 'error',
+      summary: 'Sesión no encontrada',
+      detail: 'Inicia sesión nuevamente como administrador.',
+      life: 3000
+    })
+    return
+  }
+
+  if (!editando && contrasena.length < 8) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Contraseña inválida',
+      detail: 'La contraseña debe tener al menos 8 caracteres.',
+      life: 2500
+    })
+    return
+  }
+
+  if (editando && contrasena && contrasena.length < 8) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Contraseña inválida',
+      detail: 'Si cambias la contraseña, debe tener al menos 8 caracteres.',
+      life: 2500
+    })
+    return
+  }
+
+  try {
+    const res = await fetch(
+      editando
+        ? `http://localhost:3000/api/users/${usuarioEditandoId.value}`
+        : 'http://localhost:3000/api/users',
+      {
+        method: editando ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre,
+          correo,
+          contrasena,
+          idRol: Number(formUsuario.value.idRol),
+          estatus: formUsuario.value.estatus
+        })
+      }
+    )
+
+    const resultado = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      toast.add({
+        severity: 'error',
+        summary: 'No se pudo guardar',
+        detail: resultado.error || 'Ocurrió un error al guardar el usuario.',
+        life: 3000
+      })
+      return
+    }
+
+    cancelarFormularioUsuario()
+    await cargarDatos()
+
+    toast.add({
+      severity: 'success',
+      summary: editando ? 'Usuario actualizado' : 'Usuario creado',
+      detail: editando
+        ? 'Se guardaron los cambios del usuario.'
+        : 'El usuario se creó correctamente.',
+      life: 2500
+    })
+  } catch (error) {
+    console.error('Error guardando usuario:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error de conexión',
+      detail: 'No se pudo conectar con el servidor.',
+      life: 3000
+    })
+  }
+}
+
+const eliminarUsuarioConfirm = (user) => {
+  confirmacion.value = {
+    titulo: 'Eliminar Usuario',
+    mensaje: `¿Estás seguro de que deseas eliminar a "${user.nombre}"?`,
+    boton: 'Eliminar',
+    accion: 'eliminarUsuario',
+    datos: user
+  }
+
+  mostrarConfirmacion.value = true
+}
+
+const abrirFormularioCategoria = () => {
+  nuevaCategoria.value = {
+    nombre: '',
+    parentId: null
+  }
+  mostrarFormNuevaCategoria.value = true
+}
+
+const cancelarFormularioCategoria = () => {
   mostrarFormNuevaCategoria.value = false
+  nuevaCategoria.value = {
+    nombre: '',
+    parentId: null
+  }
+}
+
+const crearCategoria = async () => {
+  const nombre = String(nuevaCategoria.value.nombre || '').trim()
+  const parentId = Number(nuevaCategoria.value.parentId)
+  const token = localStorage.getItem('token')
+
+  if (!nombre || !Number.isInteger(parentId) || parentId <= 0) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Datos incompletos',
+      detail: 'Escribe el nombre y selecciona Hombre o Mujer como padre.',
+      life: 3000
+    })
+    return
+  }
+
+  if (!token) {
+    toast.add({
+      severity: 'error',
+      summary: 'Sesión no encontrada',
+      detail: 'Inicia sesión nuevamente como administrador.',
+      life: 3000
+    })
+    return
+  }
+
+  try {
+    const res = await fetch('http://localhost:3000/api/categories', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ nombre, parentId })
+    })
+
+    const resultado = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      toast.add({
+        severity: 'error',
+        summary: 'No se pudo crear la categoría',
+        detail: resultado.error || 'Ocurrió un error al crearla.',
+        life: 3000
+      })
+      return
+    }
+
+    cancelarFormularioCategoria()
+    await cargarDatos()
+
+    toast.add({
+      severity: 'success',
+      summary: 'Categoría creada',
+      detail: 'La categoría se creó correctamente.',
+      life: 2500
+    })
+  } catch (error) {
+    console.error('Error creando categoría:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error de conexión',
+      detail: 'No se pudo conectar con el servidor.',
+      life: 3000
+    })
+  }
 }
 
 const eliminarProductoConfirm = (producto) => {
@@ -946,6 +1364,76 @@ const eliminarCategoriaConfirm = (categoria) => {
 }
 
 const confirmarAccion = async () => {
+  if (confirmacion.value.accion === 'eliminarUsuario') {
+    const user = confirmacion.value.datos
+    const token = localStorage.getItem('token')
+
+    if (!token) {
+      toast.add({
+        severity: 'error',
+        summary: 'Sesión no encontrada',
+        detail: 'Inicia sesión nuevamente como administrador.',
+        life: 3000
+      })
+      return
+    }
+
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/users/${user.idUsuario}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      const resultado = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        toast.add({
+          severity: 'error',
+          summary: 'No se pudo eliminar',
+          detail: resultado.error || 'Ocurrió un error al eliminar el usuario.',
+          life: 3000
+        })
+        return
+      }
+
+      mostrarConfirmacion.value = false
+      await cargarDatos()
+
+      toast.add({
+        severity: 'success',
+        summary: 'Usuario eliminado',
+        detail: 'El usuario se eliminó correctamente.',
+        life: 2500
+      })
+    } catch (error) {
+      console.error('Error eliminando usuario:', error)
+      toast.add({
+        severity: 'error',
+        summary: 'Error de conexión',
+        detail: 'No se pudo conectar con el servidor.',
+        life: 3000
+      })
+    }
+
+    return
+  }
+
+  // La API de categorías debe implementar DELETE antes de habilitar esta acción.
+  if (confirmacion.value.accion === 'eliminarCategoria') {
+    toast.add({
+      severity: 'warn',
+      summary: 'Acción no disponible',
+      detail: 'El backend todavía no tiene un endpoint para eliminar categorías.',
+      life: 3000
+    })
+    return
+  }
+
   if (confirmacion.value.accion !== 'eliminarProducto') return
 
   try {
