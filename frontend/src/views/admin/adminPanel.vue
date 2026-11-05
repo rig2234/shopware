@@ -686,10 +686,16 @@ const getImageUrl = (image) => {
 
 const cargarDatos = async () => {
   try {
-    const [resProducts, resCategories, resTallas] = await Promise.all([
+    const token = localStorage.getItem('token')
+    const headers = token
+      ? { Authorization: `Bearer ${token}` }
+      : {}
+
+    const [resProducts, resCategories, resTallas, resUsers] = await Promise.all([
       fetch('http://localhost:3000/api/products'),
       fetch('http://localhost:3000/api/categories'),
-      fetch('http://localhost:3000/api/tallas')
+      fetch('http://localhost:3000/api/tallas'),
+      fetch('http://localhost:3000/api/users', { headers })
     ])
 
     if (resProducts.ok) {
@@ -705,8 +711,15 @@ const cargarDatos = async () => {
       tallas.value = await resTallas.json()
     }
 
+    if (resUsers.ok) {
+      usuarios.value = await resUsers.json()
+      stats.value.usuarios = usuarios.value.length
+    } else {
+      const error = await resUsers.json().catch(() => ({}))
+      console.error('Error cargando usuarios:', error)
+    }
+
     // Estos valores siguen siendo de ejemplo hasta conectar sus endpoints.
-    stats.value.usuarios = 5
     stats.value.pedidos = 12
     stats.value.ventas = 1250.5
     stats.value.bajo_stock = 3
