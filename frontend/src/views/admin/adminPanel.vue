@@ -256,6 +256,22 @@
                   </div>
 
                   <div class="flex flex-col gap-2">
+                    <label class="text-slate-300">Descuento (%)</label>
+                    <InputNumber
+                      v-model="nuevoProducto.descuento"
+                      mode="decimal"
+                      :min="0"
+                      :max="100"
+                      :minFractionDigits="0"
+                      :maxFractionDigits="2"
+                      placeholder="0"
+                    />
+                    <small class="text-slate-400">
+                      Usa 0 si el producto no tiene descuento.
+                    </small>
+                  </div>
+
+                  <div class="flex flex-col gap-2">
                     <label class="text-slate-300">Categoría</label>
                     <Dropdown
                       v-model="nuevoProducto.categoriaId"
@@ -374,9 +390,20 @@
                   </template>
                 </Column>
 
-                <Column field="precio" header="Precio">
+                <Column header="Precio">
                   <template #body="slotProps">
-                    <span class="text-green-400 font-semibold">
+                    <div v-if="Number(slotProps.data.descuento || 0) > 0" class="flex flex-col">
+                      <span class="text-slate-400 line-through">
+                        ${{ formatPrice(slotProps.data.precio) }}
+                      </span>
+                      <span class="text-green-400 font-semibold">
+                        ${{ formatPrice(getPrecioConDescuento(slotProps.data)) }}
+                      </span>
+                      <span class="text-amber-300 text-xs">
+                        {{ formatPrice(slotProps.data.descuento) }}% de descuento
+                      </span>
+                    </div>
+                    <span v-else class="text-green-400 font-semibold">
                       ${{ formatPrice(slotProps.data.precio) }}
                     </span>
                   </template>
@@ -626,130 +653,129 @@
         </div>
 
         <!-- Categorías -->
-        <!-- Categorías -->
-<div v-if="seccionActiva === 'categorias'">
-  <div class="flex justify-between items-center mb-8">
-    <div>
-      <h1 class="text-4xl font-bold text-white mb-2">Categorías</h1>
-      <p class="text-slate-400">Gestiona las categorías de productos</p>
-    </div>
-
-    <Button
-      label="Nueva Categoría"
-      icon="pi pi-plus"
-      severity="primary"
-      @click="abrirFormularioCategoria"
-    />
-  </div>
-
-  <Card v-if="mostrarFormNuevaCategoria" class="mb-8">
-    <template #title>
-      <span class="text-white">
-        {{ categoriaEditandoId ? 'Editar Categoría' : 'Crear Nueva Categoría' }}
-      </span>
-    </template>
-
-    <template #content>
-      <form @submit.prevent="guardarCategoria" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-slate-300 block mb-2">Nombre de la categoría</label>
-            <InputText
-              v-model="nuevaCategoria.nombre"
-              placeholder="Ej: Camisetas"
-            />
-          </div>
-
-          <div>
-            <label class="text-slate-300 block mb-2">Categoría padre</label>
-            <Dropdown
-              v-model="nuevaCategoria.parentId"
-              :options="categoriasPadre"
-              optionLabel="nombre"
-              optionValue="idCategoria"
-              placeholder="Selecciona Hombre o Mujer"
-            />
-            <p v-if="!categoriasPadre.length" class="text-sm text-amber-300 mt-2">
-              No se encontraron categorías raíz Hombre/Mujer. Verifica que existan en la base de datos.
-            </p>
-          </div>
-        </div>
-
-        <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
-          <Button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            @click="cancelarFormularioCategoria"
-          />
-          <Button
-            type="submit"
-            :label="categoriaEditandoId ? 'Guardar Cambios' : 'Crear Categoría'"
-            severity="success"
-          />
-        </div>
-      </form>
-    </template>
-  </Card>
-
-  <Card>
-    <template #content>
-      <DataTable
-        :value="categorias"
-        tableStyle="min-width: 100%"
-        paginator
-        :rows="10"
-        responsiveLayout="scroll"
-      >
-        <Column field="idCategoria" header="ID">
-          <template #body="slotProps">
-            <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
-              #{{ slotProps.data.idCategoria }}
-            </span>
-          </template>
-        </Column>
-
-        <Column header="Categoría">
-          <template #body="slotProps">
-            {{ slotProps.data.nombreCompleto || slotProps.data.nombre }}
-          </template>
-        </Column>
-
-        <Column header="Padre">
-          <template #body="slotProps">
-            {{ slotProps.data.parent?.nombre || 'Categoría raíz' }}
-          </template>
-        </Column>
-
-        <Column field="productos" header="Productos">
-          <template #body="slotProps">
-            {{ slotProps.data.productos?.length || 0 }}
-          </template>
-        </Column>
-
-        <Column header="Acciones">
-          <template #body="slotProps">
-            <div class="flex gap-2">
-              <Button
-                v-if="slotProps.data.parentId != null"
-                label="Editar"
-                severity="warning"
-                size="small"
-                @click="editarCategoria(slotProps.data)"
-              />
-              <Button
-                label="Eliminar"
-                severity="danger"
-                size="small"
-                @click="eliminarCategoriaConfirm(slotProps.data)"
-              />
+        <div v-if="seccionActiva === 'categorias'">
+          <div class="flex justify-between items-center mb-8">
+            <div>
+              <h1 class="text-4xl font-bold text-white mb-2">Categorías</h1>
+              <p class="text-slate-400">Gestiona las categorías de productos</p>
             </div>
-          </template>
-        </Column>
-      </DataTable>
-    </template>
-  </Card>
-</div>
+
+            <Button
+              label="Nueva Categoría"
+              icon="pi pi-plus"
+              severity="primary"
+              @click="abrirFormularioCategoria"
+            />
+          </div>
+
+          <Card v-if="mostrarFormNuevaCategoria" class="mb-8">
+            <template #title>
+              <span class="text-white">
+                {{ categoriaEditandoId ? 'Editar Categoría' : 'Crear Nueva Categoría' }}
+              </span>
+            </template>
+
+            <template #content>
+              <form @submit.prevent="guardarCategoria" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="text-slate-300 block mb-2">Nombre de la categoría</label>
+                    <InputText
+                      v-model="nuevaCategoria.nombre"
+                      placeholder="Ej: Camisetas"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="text-slate-300 block mb-2">Categoría padre</label>
+                    <Dropdown
+                      v-model="nuevaCategoria.parentId"
+                      :options="categoriasPadre"
+                      optionLabel="nombre"
+                      optionValue="idCategoria"
+                      placeholder="Selecciona Hombre o Mujer"
+                    />
+                    <p v-if="!categoriasPadre.length" class="text-sm text-amber-300 mt-2">
+                      No se encontraron categorías raíz Hombre/Mujer. Verifica que existan en la base de datos.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                  <Button
+                    type="button"
+                    label="Cancelar"
+                    severity="secondary"
+                    @click="cancelarFormularioCategoria"
+                  />
+                  <Button
+                    type="submit"
+                    :label="categoriaEditandoId ? 'Guardar Cambios' : 'Crear Categoría'"
+                    severity="success"
+                  />
+                </div>
+              </form>
+            </template>
+          </Card>
+
+          <Card>
+            <template #content>
+              <DataTable
+                :value="categorias"
+                tableStyle="min-width: 100%"
+                paginator
+                :rows="10"
+                responsiveLayout="scroll"
+              >
+                <Column field="idCategoria" header="ID">
+                  <template #body="slotProps">
+                    <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                      #{{ slotProps.data.idCategoria }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column header="Categoría">
+                  <template #body="slotProps">
+                    {{ slotProps.data.nombreCompleto || slotProps.data.nombre }}
+                  </template>
+                </Column>
+
+                <Column header="Padre">
+                  <template #body="slotProps">
+                    {{ slotProps.data.parent?.nombre || 'Categoría raíz' }}
+                  </template>
+                </Column>
+
+                <Column field="productos" header="Productos">
+                  <template #body="slotProps">
+                    {{ slotProps.data.productos?.length || 0 }}
+                  </template>
+                </Column>
+
+                <Column header="Acciones">
+                  <template #body="slotProps">
+                    <div class="flex gap-2">
+                      <Button
+                        v-if="slotProps.data.parentId != null"
+                        label="Editar"
+                        severity="warning"
+                        size="small"
+                        @click="editarCategoria(slotProps.data)"
+                      />
+                      <Button
+                        label="Eliminar"
+                        severity="danger"
+                        size="small"
+                        @click="eliminarCategoriaConfirm(slotProps.data)"
+                      />
+                    </div>
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
+        </div>
       </div>
     </main>
 
@@ -821,6 +847,7 @@ const formUsuario = ref(formularioUsuarioVacio())
 const nuevoProductoVacio = () => ({
   nombre: '',
   precio: '',
+  descuento: 0,
   categoriaId: '',
   tallaId: '',
   stock: 0,
@@ -863,7 +890,13 @@ const stats = ref({
 
 const imagePreview = ref(null)
 
-const formatPrice = (price) => parseFloat(price || 0).toFixed(2)
+const formatPrice = (price) => Number(price || 0).toFixed(2)
+
+const getPrecioConDescuento = (producto) => {
+  const precio = Number(producto?.precio || 0)
+  const descuento = Number(producto?.descuento || 0)
+  return Number((precio * (1 - descuento / 100)).toFixed(2))
+}
 
 const formatDate = (date) => {
   if (!date) return 'N/A'
@@ -984,6 +1017,7 @@ const editarProducto = (producto) => {
   nuevoProducto.value = {
     nombre: producto.nombre || '',
     precio: producto.precio === null ? null : Number(producto.precio),
+    descuento: Number(producto.descuento || 0),
     categoriaId: producto.categoriaId || '',
     tallaId: '',
     stock: 0,
@@ -1079,12 +1113,24 @@ const guardarProducto = async () => {
     return
   }
 
+  const descuento = Number(nuevoProducto.value.descuento ?? 0)
+  if (!Number.isFinite(descuento) || descuento < 0 || descuento > 100) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Descuento inválido',
+      detail: 'El descuento debe ser un porcentaje entre 0 y 100.',
+      life: 2500
+    })
+    return
+  }
+
   const editando = Boolean(productoEditandoId.value)
 
   try {
     const form = new FormData()
     form.append('nombre', nombre)
     form.append('precio', String(precio ?? ''))
+    form.append('descuento', String(descuento))
     form.append('categoriaId', String(nuevoProducto.value.categoriaId ?? ''))
     form.append('tallas', JSON.stringify(tallasDelProducto))
 
@@ -1391,7 +1437,7 @@ const eliminarProductoConfirm = (producto) => {
 const eliminarCategoriaConfirm = (categoria) => {
   confirmacion.value = {
     titulo: 'Eliminar Categoría',
-    mensaje: `¿Estás seguro de que deseas eliminar "${categoria.nombre}"?`,
+    mensaje: `¿Estás seguro de que deseas eliminar "${categoria.nombre}"? Los productos asignados quedarán sin categoría.`,
     boton: 'Eliminar',
     accion: 'eliminarCategoria',
     datos: categoria
@@ -1400,81 +1446,130 @@ const eliminarCategoriaConfirm = (categoria) => {
 }
 
 const confirmarAccion = async () => {
-  if (confirmacion.value.accion === 'eliminarCategoria') {
-  const categoria = confirmacion.value.datos
-  const token = localStorage.getItem('token')
+  const accion = confirmacion.value.accion
+  const datos = confirmacion.value.datos
 
-  if (!token) {
-    toast.add({
-      severity: 'error',
-      summary: 'Sesión no encontrada',
-      detail: 'Inicia sesión nuevamente como administrador.',
-      life: 3000
-    })
-    return
-  }
+  if (accion === 'eliminarUsuario') {
+    const token = localStorage.getItem('token')
 
-  try {
-    const res = await fetch(
-      `http://localhost:3000/api/categories/${categoria.idCategoria}`,
-      {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
-
-    const resultado = await res.json().catch(() => ({}))
-
-    if (!res.ok) {
+    if (!token) {
       toast.add({
         severity: 'error',
-        summary: 'No se pudo eliminar',
-        detail: resultado.error || 'Ocurrió un error al eliminar la categoría.',
+        summary: 'Sesión no encontrada',
+        detail: 'Inicia sesión nuevamente como administrador.',
         life: 3000
       })
       return
     }
 
-    mostrarConfirmacion.value = false
-    await cargarDatos()
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/users/${datos.idUsuario}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
 
-    toast.add({
-      severity: 'success',
-      summary: 'Categoría eliminada',
-      detail: 'La categoría se eliminó y sus productos quedaron sin categoría.',
-      life: 2500
-    })
-  } catch (error) {
-    console.error('Error eliminando categoría:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error de conexión',
-      detail: 'No se pudo conectar con el servidor.',
-      life: 3000
-    })
+      const resultado = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        toast.add({
+          severity: 'error',
+          summary: 'No se pudo eliminar',
+          detail: resultado.error || 'Ocurrió un error al eliminar el usuario.',
+          life: 3000
+        })
+        return
+      }
+
+      mostrarConfirmacion.value = false
+      await cargarDatos()
+
+      toast.add({
+        severity: 'success',
+        summary: 'Usuario eliminado',
+        detail: 'El usuario se eliminó correctamente.',
+        life: 2500
+      })
+    } catch (error) {
+      console.error('Error eliminando usuario:', error)
+      toast.add({
+        severity: 'error',
+        summary: 'Error de conexión',
+        detail: 'No se pudo conectar con el servidor.',
+        life: 3000
+      })
+    }
+
+    return
   }
 
-  return
-}
+  if (accion === 'eliminarCategoria') {
+    const token = localStorage.getItem('token')
 
-  // La API de categorías debe implementar DELETE antes de habilitar esta acción.
-  /*if (confirmacion.value.accion === 'eliminarCategoria') {
-    toast.add({
-      severity: 'warn',
-      summary: 'Acción no disponible',
-      detail: 'El backend todavía no tiene un endpoint para eliminar categorías.',
-      life: 3000
-    })
+    if (!token) {
+      toast.add({
+        severity: 'error',
+        summary: 'Sesión no encontrada',
+        detail: 'Inicia sesión nuevamente como administrador.',
+        life: 3000
+      })
+      return
+    }
+
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/categories/${datos.idCategoria}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      const resultado = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        toast.add({
+          severity: 'error',
+          summary: 'No se pudo eliminar',
+          detail: resultado.error || 'Ocurrió un error al eliminar la categoría.',
+          life: 3000
+        })
+        return
+      }
+
+      mostrarConfirmacion.value = false
+      await cargarDatos()
+
+      toast.add({
+        severity: 'success',
+        summary: 'Categoría eliminada',
+        detail: 'La categoría se eliminó y sus productos quedaron sin categoría.',
+        life: 2500
+      })
+    } catch (error) {
+      console.error('Error eliminando categoría:', error)
+      toast.add({
+        severity: 'error',
+        summary: 'Error de conexión',
+        detail: 'No se pudo conectar con el servidor.',
+        life: 3000
+      })
+    }
+
     return
-  }*/
+  }
 
-  if (confirmacion.value.accion !== 'eliminarProducto') return
+  if (accion !== 'eliminarProducto') return
 
   try {
     const res = await fetch(
-      `http://localhost:3000/api/products/${confirmacion.value.datos.idProducto}`,
+      `http://localhost:3000/api/products/${datos.idProducto}`,
       { method: 'DELETE' }
     )
 

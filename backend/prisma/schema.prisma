@@ -58,6 +58,7 @@ model Producto {
   idProducto    Int             @id @default(autoincrement()) @map("id_producto")
   nombre        String?         @db.VarChar(100)
   precio        Decimal?        @db.Decimal(10, 2)
+  descuento     Decimal         @default(0) @db.Decimal(5, 2)
   categoriaId   Int?            @map("categoria")
   imagen        String?         @db.VarChar(255)
 
