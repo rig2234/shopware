@@ -1,91 +1,144 @@
 <template>
   <div class="min-h-screen bg-[#f8f8f8] font-sans text-[#333333]">
-
-    <nav class="bg-white sticky top-0 z-50 shadow-md border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-6 py-4">
-        <div class="flex justify-between items-center gap-8">
-          <div class="text-3xl font-bold text-[#d4a574] flex-shrink-0">
+    <nav class="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-md">
+      <div class="mx-auto max-w-7xl px-6 py-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex-shrink-0 text-3xl font-bold text-[#d4a574]">
             Shopware
           </div>
 
-          <div class="hidden md:flex flex-1 max-w-md">
-            <div class="w-full relative">
+          <div class="order-3 w-full md:order-2 md:flex md:max-w-md md:flex-1">
+            <div class="relative w-full">
               <input
                 v-model.trim="busqueda"
                 type="search"
                 placeholder="Buscar productos o categorías..."
                 aria-label="Buscar productos o categorías"
-                class="w-full px-4 py-2 bg-gray-100 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#d4a574] transition-all"
+                class="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 pr-10 transition-all focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
               />
-              <button class="absolute right-3 top-2.5 text-gray-500 hover:text-[#d4a574]">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              <span class="pointer-events-none absolute right-3 top-2.5 text-gray-500" aria-hidden="true">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
                 </svg>
-              </button>
+              </span>
             </div>
           </div>
 
-          <div class="flex items-center gap-6">
-            <button class="relative hover:text-[#d4a574] transition-colors" @click="irACarrito">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          <div class="order-2 flex items-center gap-4 md:order-3 md:gap-6">
+            <button
+              type="button"
+              class="relative transition-colors hover:text-[#d4a574]"
+              aria-label="Ir al carrito"
+              @click="irACarrito"
+            >
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5m1.6 8l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                />
               </svg>
-              <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+              <span class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                0
+              </span>
             </button>
 
-            <button class="hover:text-[#d4a574] transition-colors hidden sm:block" @click="irAlLoginSiNoEstaAutenticado">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            <button
+              type="button"
+              class="hidden transition-colors hover:text-[#d4a574] sm:block"
+              aria-label="Mi cuenta"
+              @click="irAlLoginSiNoEstaAutenticado"
+            >
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </button>
 
             <button
               v-if="estaAutenticado"
+              type="button"
+              class="rounded-lg bg-[#d4a574] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#c89456]"
               @click="cerrarSesion"
-              class="px-4 py-2 bg-[#d4a574] text-white rounded-lg font-semibold text-sm hover:bg-[#c89456] transition-all duration-300 shadow-sm"
             >
               Salir
             </button>
 
             <button
               v-else
+              type="button"
+              class="rounded-lg bg-[#d4a574] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#c89456]"
               @click="irALogin"
-              class="px-4 py-2 bg-[#d4a574] text-white rounded-lg font-semibold text-sm hover:bg-[#c89456] transition-all duration-300 shadow-sm"
             >
               Iniciar sesión
+            </button>
+
+            <button
+              type="button"
+              class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 transition-colors hover:border-[#d4a574] hover:text-[#a8733e]"
+              :aria-expanded="sidebarAbierta"
+              aria-controls="sidebar-categorias"
+              @click="sidebarAbierta = !sidebarAbierta"
+            >
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+              Categorías
             </button>
           </div>
         </div>
 
-        <ul class="flex md:hidden gap-6 list-none mt-4 text-sm">
-          <li><a href="#" class="hover:text-[#d4a574] transition-colors">Inicio</a></li>
-          <li><a href="#catalogo" class="hover:text-[#d4a574] transition-colors">Catálogo</a></li>
+        <ul class="mt-4 flex list-none gap-6 text-sm md:hidden">
+          <li><a href="#" class="transition-colors hover:text-[#d4a574]">Inicio</a></li>
+          <li><a href="#catalogo" class="transition-colors hover:text-[#d4a574]">Catálogo</a></li>
         </ul>
       </div>
     </nav>
 
-    <section class="relative bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] text-white overflow-hidden py-24 px-6">
+    <section class="relative overflow-hidden bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] px-6 py-24 text-white">
       <div class="absolute inset-0 opacity-10">
-        <div class="absolute top-0 right-0 w-96 h-96 bg-[#d4a574] rounded-full blur-3xl"></div>
-        <div class="absolute bottom-0 left-0 w-96 h-96 bg-[#d4a574] rounded-full blur-3xl"></div>
+        <div class="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#d4a574] blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-[#d4a574] blur-3xl"></div>
       </div>
 
-      <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
+      <div class="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
         <div class="flex-1">
-          <div class="inline-block bg-[#d4a574] text-black px-4 py-1 rounded-full text-sm font-bold mb-4">
+          <div class="mb-4 inline-block rounded-full bg-[#d4a574] px-4 py-1 text-sm font-bold text-black">
             ✨ Nuevo Estilo
           </div>
-          <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+          <h1 class="mb-6 text-5xl font-bold leading-tight md:text-6xl">
             Estilo que te <span class="text-[#d4a574]">define</span>
           </h1>
-          <p class="text-lg text-gray-300 mb-8 leading-relaxed">
+          <p class="mb-8 text-lg leading-relaxed text-gray-300">
             Descubre la mejor colección de ropa casual y cómoda. Diseño moderno, calidad premium y envío rápido a todo el país.
           </p>
-          <div class="flex gap-4 flex-wrap">
-            <a href="#catalogo" class="px-8 py-3 bg-[#d4a574] text-black rounded-lg font-bold hover:bg-[#c89456] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1">
+          <div class="flex flex-wrap gap-4">
+            <a
+              href="#catalogo"
+              class="rounded-lg bg-[#d4a574] px-8 py-3 font-bold text-black shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-[#c89456] hover:shadow-xl"
+            >
               Explorar Colección
             </a>
-            <button class="px-8 py-3 border-2 border-[#d4a574] text-[#d4a574] rounded-lg font-bold hover:bg-[#d4a574] hover:text-black transition-all duration-300">
+            <button
+              type="button"
+              class="rounded-lg border-2 border-[#d4a574] px-8 py-3 font-bold text-[#d4a574] transition-all duration-300 hover:bg-[#d4a574] hover:text-black"
+              @click="mostrarOfertas"
+            >
               Ver Ofertas
             </button>
           </div>
@@ -93,13 +146,18 @@
 
         <div class="flex-1 text-center">
           <div class="relative">
-            <div class="absolute inset-0 bg-gradient-to-br from-[#d4a574] to-transparent rounded-2xl blur-2xl opacity-20"></div>
-            <div class="relative w-full h-96 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#d4a574] to-transparent opacity-20 blur-2xl"></div>
+            <div class="relative flex h-96 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-400 to-gray-500 shadow-2xl">
               <div class="text-center">
-                <svg class="w-32 h-32 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                <svg class="mx-auto mb-4 h-32 w-32 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
                 </svg>
-                <p class="text-gray-600 font-semibold">Colección Premium</p>
+                <p class="font-semibold text-gray-600">Colección Premium</p>
               </div>
             </div>
           </div>
@@ -107,226 +165,287 @@
       </div>
     </section>
 
-    <section class="bg-white py-12 px-6 border-b border-gray-200">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-        <div class="text-center">
-          <div class="w-12 h-12 bg-[#d4a574] rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9-4v4m0 0v4"></path>
-            </svg>
+    <section class="border-b border-gray-200 bg-white px-6 py-12">
+      <div class="mx-auto grid max-w-7xl grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
+        <div
+          v-for="beneficio in beneficios"
+          :key="beneficio.titulo"
+          class="text-center"
+        >
+          <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#d4a574]">
+            <span class="text-xl text-white">{{ beneficio.icono }}</span>
           </div>
-          <h3 class="font-bold text-lg mb-2">Envío Rápido</h3>
-          <p class="text-gray-600 text-sm">Entrega en 2-3 días hábiles</p>
-        </div>
-
-        <div class="text-center">
-          <div class="w-12 h-12 bg-[#d4a574] rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h3 class="font-bold text-lg mb-2">Calidad Garantizada</h3>
-          <p class="text-gray-600 text-sm">100% satisfacción garantizada</p>
-        </div>
-
-        <div class="text-center">
-          <div class="w-12 h-12 bg-[#d4a574] rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-          </div>
-          <h3 class="font-bold text-lg mb-2">Soporte 24/7</h3>
-          <p class="text-gray-600 text-sm">Equipo disponible siempre</p>
-        </div>
-
-        <div class="text-center">
-          <div class="w-12 h-12 bg-[#d4a574] rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h3 class="font-bold text-lg mb-2">Mejores Precios</h3>
-          <p class="text-gray-600 text-sm">Descuentos y ofertas exclusivas</p>
+          <h3 class="mb-2 text-lg font-bold">{{ beneficio.titulo }}</h3>
+          <p class="text-sm text-gray-600">{{ beneficio.descripcion }}</p>
         </div>
       </div>
     </section>
 
-    <section id="catalogo" class="py-16 px-6">
-      <div class="max-w-7xl mx-auto">
-        <div class="text-center mb-12">
-          <h2 class="text-4xl font-bold text-[#1a1a1a] mb-2">Nuestro Catálogo</h2>
+    <section id="catalogo" class="px-6 py-16">
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-10 text-center">
+          <h2 class="mb-2 text-4xl font-bold text-[#1a1a1a]">Nuestro Catálogo</h2>
           <p class="text-gray-600">Explora nuestra colección de ropa premium</p>
         </div>
 
-        <div class="mb-10 flex flex-wrap gap-3 justify-center">
-          <button
-            type="button"
-            @click="categoriaSeleccionada = 'todas'"
-            :aria-pressed="categoriaSeleccionada === 'todas'"
-            :class="categoriaSeleccionada === 'todas'
-              ? 'bg-[#d4a574] text-white border-[#d4a574]'
-              : 'bg-white text-gray-800 border-gray-300 hover:border-[#d4a574] hover:text-[#d4a574]'"
-            class="px-6 py-2 border-2 rounded-full font-semibold transition-all"
-          >
-            Todas
-          </button>
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <h3 class="text-xl font-semibold text-[#1a1a1a]">{{ tituloCategoria }}</h3>
 
-          <button
-            v-for="categoria in categoriasDisponibles"
-            :key="categoria.id"
-            type="button"
-            @click="categoriaSeleccionada = categoria.id"
-            :aria-pressed="categoriaSeleccionada === categoria.id"
-            :class="categoriaSeleccionada === categoria.id
-              ? 'bg-[#d4a574] text-white border-[#d4a574]'
-              : 'bg-white text-gray-800 border-gray-300 hover:border-[#d4a574] hover:text-[#d4a574]'"
-            class="px-6 py-2 border-2 rounded-full font-semibold transition-all"
-          >
-            {{ categoria.nombre }}
-          </button>
+          <p class="text-sm text-gray-500" aria-live="polite">
+            {{ productosFiltrados.length }}
+            {{ productosFiltrados.length === 1 ? 'producto' : 'productos' }}
+          </p>
         </div>
 
-        <div v-if="productosFiltrados.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <div
+        <aside
+          id="sidebar-categorias"
+          class="fixed bottom-0 right-0 top-0 z-[60] w-[min(21rem,88vw)] overflow-y-auto border-l border-gray-200 bg-white p-5 pt-6 shadow-2xl transition-transform duration-300 ease-in-out"
+          :class="sidebarAbierta ? 'translate-x-0' : 'translate-x-full'"
+          :aria-hidden="!sidebarAbierta"
+        >
+          <div class="mb-5 flex items-center justify-between border-b border-gray-200 pb-4">
+            <h3 class="text-lg font-bold text-[#1a1a1a]">Explorar catálogo</h3>
+
+            <button
+              type="button"
+              class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              aria-label="Cerrar categorías"
+              @click="sidebarAbierta = false"
+            >
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            @click="mostrarTodosLosProductos"
+            :class="categoriaSeleccionada === 'todas'
+              ? 'bg-[#d4a574] text-white'
+              : 'text-gray-700 hover:bg-gray-100'"
+            class="mb-2 w-full rounded-lg px-4 py-3 text-left font-semibold transition-colors"
+          >
+            Todos los productos
+          </button>
+
+          <p v-if="cargandoCategorias" class="px-4 py-2 text-sm text-gray-500">
+            Cargando categorías...
+          </p>
+
+          <p v-else-if="errorCategorias" class="px-4 py-2 text-sm text-red-600">
+            No se pudieron cargar las categorías.
+          </p>
+
+          <div v-else class="space-y-2">
+            <div v-for="genero in categoriasRaiz" :key="genero.idCategoria">
+              <button
+                type="button"
+                @click="seleccionarGenero(genero)"
+                :aria-expanded="String(generoSeleccionado) === String(genero.idCategoria)"
+                :class="String(generoSeleccionado) === String(genero.idCategoria)
+                  ? 'bg-[#f8f1e9] text-[#a8733e]'
+                  : 'text-gray-800 hover:bg-gray-100'"
+                class="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left font-bold transition-colors"
+              >
+                <span>{{ genero.nombre }}</span>
+                <span aria-hidden="true">
+                  {{ String(generoSeleccionado) === String(genero.idCategoria) ? '−' : '+' }}
+                </span>
+              </button>
+
+              <div
+                v-if="String(generoSeleccionado) === String(genero.idCategoria)"
+                class="ml-3 mt-2 space-y-1 border-l-2 border-[#ead8c3] pl-3"
+              >
+                <button
+                  type="button"
+                  @click="seleccionarGenero(genero)"
+                  :class="categoriaSeleccionada === `genero:${genero.idCategoria}`
+                    ? 'bg-[#f8f1e9] font-semibold text-[#a8733e]'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-[#a8733e]'"
+                  class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
+                >
+                  Todas las categorías de {{ genero.nombre }}
+                </button>
+
+                <button
+                  v-for="categoria in subcategoriasDe(genero.idCategoria)"
+                  :key="categoria.idCategoria"
+                  type="button"
+                  @click="seleccionarCategoria(categoria)"
+                  :class="String(categoriaSeleccionada) === String(categoria.idCategoria)
+                    ? 'bg-[#f8f1e9] font-semibold text-[#a8733e]'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-[#a8733e]'"
+                  class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
+                >
+                  {{ categoria.nombre }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 border-t border-gray-200 pt-4">
+            <h4 class="mb-2 text-sm font-bold text-gray-500">Más opciones</h4>
+            <p class="text-sm text-gray-400">Próximamente</p>
+          </div>
+        </aside>
+
+        <div
+          v-if="productosFiltrados.length"
+          class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        >
+          <article
             v-for="producto in productosFiltrados"
             :key="producto.idProducto"
-            class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-2 group"
+            class="group flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
           >
             <div class="relative h-64 overflow-hidden bg-gray-200">
               <img
-                :src="producto.imagen ? `http://localhost:3000${producto.imagen}` : 'https://via.placeholder.com/500x600?text=Shopware'"
-                :alt="producto.nombre"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                :src="urlImagen(producto.imagen)"
+                :alt="producto.nombre || 'Producto Shopware'"
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
-              <div class="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">-20%</div>
-              <button class="absolute top-3 left-3 bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md hover:bg-[#d4a574] hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                </svg>
-              </button>
+
+              <span
+                v-if="Number(producto.descuento) > 0"
+                class="absolute right-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white"
+              >
+                -{{ producto.descuento }}%
+              </span>
             </div>
 
-            <div class="p-4 flex flex-col flex-grow">
-              <h3 class="font-bold text-lg text-[#1a1a1a] truncate mb-2">{{ producto.nombre }}</h3>
-
-              <div class="flex items-center gap-2 mb-3">
-                <div class="flex text-yellow-400">
-                  <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
-                </div>
-                <span class="text-gray-500 text-xs">(120)</span>
-              </div>
+            <div class="flex flex-grow flex-col p-4">
+              <p class="mb-1 text-xs text-gray-500">
+                {{ nombreCategoriaProducto(producto) }}
+              </p>
+              <h4 class="mb-3 truncate text-lg font-bold text-[#1a1a1a]">
+                {{ producto.nombre }}
+              </h4>
 
               <div class="mb-4">
-                <p class="text-[#d4a574] font-bold text-2xl">${{ formatPrice(producto.precio) }}</p>
-                <p class="text-gray-400 line-through text-sm">${{ formatPrice(producto.precio * 1.25) }}</p>
+                <p class="text-2xl font-bold text-[#d4a574]">
+                  ${{ formatPrice(precioFinal(producto)) }}
+                </p>
+                <p
+                  v-if="Number(producto.descuento) > 0"
+                  class="text-sm text-gray-400 line-through"
+                >
+                  ${{ formatPrice(producto.precio) }}
+                </p>
               </div>
 
-              <div class="flex gap-2 mt-auto">
+              <div class="mt-auto flex gap-2">
                 <button
+                  type="button"
                   @click="intentarAgregar(producto)"
-                  class="flex-1 py-2 bg-[#1a1a1a] text-white rounded-lg font-semibold hover:bg-[#d4a574] hover:text-[#1a1a1a] transition-all duration-300 text-sm"
+                  class="flex-1 rounded-lg bg-[#1a1a1a] py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-[#d4a574] hover:text-[#1a1a1a]"
                 >
                   Agregar
                 </button>
+
                 <button
+                  type="button"
                   @click="intentarComprar(producto)"
-                  class="px-3 py-2 border-2 border-gray-300 rounded-lg hover:border-[#d4a574] hover:text-[#d4a574] transition-all duration-300"
+                  class="rounded-lg border-2 border-gray-300 px-3 py-2 transition-all duration-300 hover:border-[#d4a574] hover:text-[#d4a574]"
                   title="Comprar ahora"
+                  aria-label="Comprar ahora"
                 >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </button>
               </div>
             </div>
-          </div>
+          </article>
         </div>
 
-        <div v-else class="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-200">
-          <p class="text-xl text-gray-600 mb-2">
-            {{ productos.length ? 'No se encontraron productos con esos filtros.' : 'Cargando productos...' }}
+        <div
+          v-else
+          class="rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm"
+        >
+          <p class="mb-2 text-xl text-gray-600">
+            {{ cargandoProductos ? 'Cargando productos...' : 'No se encontraron productos.' }}
           </p>
           <p class="text-gray-500">
-            {{ productos.length ? 'Prueba con otra búsqueda o categoría.' : 'Por favor espera un momento.' }}
+            {{ cargandoProductos ? 'Por favor espera un momento.' : 'Prueba con otra búsqueda o categoría.' }}
           </p>
         </div>
       </div>
     </section>
 
-    <section class="bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] text-white py-16 px-6 my-12">
-      <div class="max-w-2xl mx-auto text-center">
-        <h2 class="text-3xl font-bold mb-4">Suscríbete a Nuestro Newsletter</h2>
-        <p class="text-gray-300 mb-8">Recibe las mejores ofertas y novedades directamente en tu correo</p>
+    <section class="my-12 bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] px-6 py-16 text-white">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="mb-4 text-3xl font-bold">Suscríbete a Nuestro Newsletter</h2>
+        <p class="mb-8 text-gray-300">
+          Recibe las mejores ofertas y novedades directamente en tu correo
+        </p>
 
-        <div class="flex gap-3 flex-col sm:flex-row">
+        <div class="flex flex-col gap-3 sm:flex-row">
           <input
             type="email"
             placeholder="tu@email.com"
-            class="flex-1 px-4 py-3 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
+            class="flex-1 rounded-lg bg-white px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
           />
-          <button class="px-8 py-3 bg-[#d4a574] text-black rounded-lg font-bold hover:bg-[#c89456] transition-all duration-300 whitespace-nowrap">
+          <button class="whitespace-nowrap rounded-lg bg-[#d4a574] px-8 py-3 font-bold text-black transition-all duration-300 hover:bg-[#c89456]">
             Suscribirse
           </button>
         </div>
       </div>
     </section>
 
-    <footer class="bg-[#1a1a1a] text-white py-16 px-6">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+    <footer class="bg-[#1a1a1a] px-6 py-16 text-white">
+      <div class="mx-auto mb-8 grid max-w-7xl grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
         <div>
-          <h3 class="text-xl font-bold text-[#d4a574] mb-4">Shopware</h3>
-          <p class="text-gray-400 text-sm">Tu tienda de moda online con los mejores estilos y precios del mercado.</p>
+          <h3 class="mb-4 text-xl font-bold text-[#d4a574]">Shopware</h3>
+          <p class="text-sm text-gray-400">
+            Tu tienda de moda online con los mejores estilos y precios del mercado.
+          </p>
         </div>
 
         <div>
-          <h4 class="font-bold mb-4">Tienda</h4>
-          <ul class="space-y-2 text-gray-400 text-sm">
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Novedades</a></li>
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Ofertas</a></li>
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Hombres</a></li>
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Mujeres</a></li>
+          <h4 class="mb-4 font-bold">Tienda</h4>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#catalogo" class="transition-colors hover:text-[#d4a574]">Novedades</a></li>
+            <li><a href="#catalogo" class="transition-colors hover:text-[#d4a574]">Ofertas</a></li>
+            <li><a href="#catalogo" class="transition-colors hover:text-[#d4a574]">Hombres</a></li>
+            <li><a href="#catalogo" class="transition-colors hover:text-[#d4a574]">Mujeres</a></li>
           </ul>
         </div>
 
         <div>
-          <h4 class="font-bold mb-4">Ayuda</h4>
-          <ul class="space-y-2 text-gray-400 text-sm">
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Contacto</a></li>
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Cambios y Devoluciones</a></li>
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Envíos</a></li>
-            <li><a href="#" class="hover:text-[#d4a574] transition-colors">Preguntas Frecuentes</a></li>
+          <h4 class="mb-4 font-bold">Ayuda</h4>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#" class="transition-colors hover:text-[#d4a574]">Contacto</a></li>
+            <li><a href="#" class="transition-colors hover:text-[#d4a574]">Cambios y Devoluciones</a></li>
+            <li><a href="#" class="transition-colors hover:text-[#d4a574]">Envíos</a></li>
+            <li><a href="#" class="transition-colors hover:text-[#d4a574]">Ayuda</a></li>
           </ul>
         </div>
 
         <div>
-          <h4 class="font-bold mb-4">Síguenos</h4>
+          <h4 class="mb-4 font-bold">Síguenos</h4>
           <div class="flex gap-4">
-            <a href="#" class="w-10 h-10 bg-[#d4a574] rounded-full flex items-center justify-center hover:bg-white hover:text-[#d4a574] transition-all">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
+            <a href="#" aria-label="Facebook" class="flex h-10 w-10 items-center justify-center rounded-full bg-[#d4a574] transition-all hover:bg-white hover:text-[#d4a574]">
+              <span class="font-bold">f</span>
             </a>
-            <a href="#" class="w-10 h-10 bg-[#d4a574] rounded-full flex items-center justify-center hover:bg-white hover:text-[#d4a574] transition-all">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.25 7-7 7-7"/>
-              </svg>
+            <a href="#" aria-label="Twitter" class="flex h-10 w-10 items-center justify-center rounded-full bg-[#d4a574] transition-all hover:bg-white hover:text-[#d4a574]">
+              <span class="font-bold">𝕏</span>
             </a>
-            <a href="#" class="w-10 h-10 bg-[#d4a574] rounded-full flex items-center justify-center hover:bg-white hover:text-[#d4a574] transition-all">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16.5 7.5v9a2 2 0 01-2 2h-7a2 2 0 01-2-2v-9a2 2 0 012-2h7a2 2 0 012 2z" fill="white"/>
-              </svg>
+            <a href="#" aria-label="Instagram" class="flex h-10 w-10 items-center justify-center rounded-full bg-[#d4a574] transition-all hover:bg-white hover:text-[#d4a574]">
+              <span class="font-bold">◎</span>
             </a>
           </div>
         </div>
       </div>
 
-      <div class="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
+      <div class="border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
         <p>&copy; 2026 Shopware. Todos los derechos reservados.</p>
         <div class="mt-4 flex justify-center gap-6 text-xs">
-          <a href="#" class="hover:text-[#d4a574] transition-colors">Política de Privacidad</a>
-          <a href="#" class="hover:text-[#d4a574] transition-colors">Términos de Servicio</a>
-          <a href="#" class="hover:text-[#d4a574] transition-colors">Cookies</a>
+          <a href="#" class="transition-colors hover:text-[#d4a574]">Política de Privacidad</a>
+          <a href="#" class="transition-colors hover:text-[#d4a574]">Términos de Servicio</a>
+          <a href="#" class="transition-colors hover:text-[#d4a574]">Cookies</a>
         </div>
       </div>
     </footer>
@@ -338,37 +457,97 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
 const productos = ref([])
+const categorias = ref([])
 const usuario = ref(null)
 const busqueda = ref('')
 const categoriaSeleccionada = ref('todas')
+const generoSeleccionado = ref(null)
+const sidebarAbierta = ref(false)
+const cargandoProductos = ref(true)
+const cargandoCategorias = ref(true)
+const errorCategorias = ref(false)
 
-const categoriasDisponibles = computed(() => {
-  const categorias = new Map()
+const beneficios = [
+  { icono: '↗', titulo: 'Envío Rápido', descripcion: 'Entrega en 2-3 días hábiles' },
+  { icono: '✓', titulo: 'Calidad Garantizada', descripcion: '100% satisfacción garantizada' },
+  { icono: '◎', titulo: 'Soporte 24/7', descripcion: 'Equipo disponible siempre' },
+  { icono: '$', titulo: 'Mejores Precios', descripcion: 'Descuentos y ofertas exclusivas' }
+]
 
-  for (const producto of productos.value) {
-    const id = String(producto.categoria?.idCategoria ?? 'sin-categoria')
-    const nombre = producto.categoria?.nombre ?? 'Sin categoría'
+const categoriasRaiz = computed(() => {
+  return categorias.value.filter((categoria) => {
+    const nombre = String(categoria.nombre || '').trim().toLocaleLowerCase('es')
+    return categoria.parentId === null && ['hombre', 'mujer'].includes(nombre)
+  })
+})
 
-    if (!categorias.has(id)) {
-      categorias.set(id, { id, nombre })
-    }
+const tituloCategoria = computed(() => {
+  if (categoriaSeleccionada.value === 'todas') {
+    return 'Todos los productos'
   }
 
-  return Array.from(categorias.values())
+  if (String(categoriaSeleccionada.value).startsWith('genero:')) {
+    const id = String(categoriaSeleccionada.value).split(':')[1]
+    const genero = categoriasRaiz.value.find(
+      (categoria) => String(categoria.idCategoria) === id
+    )
+    return genero ? `Productos para ${genero.nombre}` : 'Productos'
+  }
+
+  const categoria = categorias.value.find(
+    (item) => String(item.idCategoria) === String(categoriaSeleccionada.value)
+  )
+
+  return categoria?.nombreCompleto || categoria?.nombre || 'Productos'
 })
+
+const estaAutenticado = computed(() => {
+  return Boolean(
+    localStorage.getItem('token') &&
+    localStorage.getItem('usuario')
+  )
+})
+
+const subcategoriasDe = (idCategoriaRaiz) => {
+  return categorias.value.filter(
+    (categoria) => Number(categoria.parentId) === Number(idCategoriaRaiz)
+  )
+}
 
 const productosFiltrados = computed(() => {
   const termino = busqueda.value.toLocaleLowerCase('es').trim()
 
   return productos.value.filter((producto) => {
-    const categoriaId = String(producto.categoria?.idCategoria ?? 'sin-categoria')
-    const nombreProducto = String(producto.nombre ?? '').toLocaleLowerCase('es')
-    const nombreCategoria = String(producto.categoria?.nombre ?? 'Sin categoría').toLocaleLowerCase('es')
+    const idCategoriaProducto = producto.categoria?.idCategoria
+    let coincideCategoria = true
 
-    const coincideCategoria =
-      categoriaSeleccionada.value === 'todas' ||
-      categoriaId === categoriaSeleccionada.value
+    if (String(categoriaSeleccionada.value).startsWith('genero:')) {
+      const idRaiz = Number(categoriaSeleccionada.value.split(':')[1])
+      const idsPermitidos = new Set([
+        String(idRaiz),
+        ...subcategoriasDe(idRaiz).map((categoria) => String(categoria.idCategoria))
+      ])
+
+      coincideCategoria = idsPermitidos.has(String(idCategoriaProducto))
+    } else if (categoriaSeleccionada.value !== 'todas') {
+      coincideCategoria =
+        String(idCategoriaProducto) === String(categoriaSeleccionada.value)
+    }
+
+    const categoriaProducto = categorias.value.find(
+      (categoria) =>
+        String(categoria.idCategoria) === String(idCategoriaProducto)
+    )
+
+    const nombreProducto = String(producto.nombre || '').toLocaleLowerCase('es')
+    const nombreCategoria = String(
+      categoriaProducto?.nombreCompleto ||
+      categoriaProducto?.nombre ||
+      producto.categoria?.nombre ||
+      ''
+    ).toLocaleLowerCase('es')
 
     const coincideBusqueda =
       !termino ||
@@ -379,12 +558,38 @@ const productosFiltrados = computed(() => {
   })
 })
 
-const estaAutenticado = computed(() => {
-  return !!localStorage.getItem('token') && !!localStorage.getItem('usuario')
-})
+const seleccionarGenero = (genero) => {
+  const id = String(genero.idCategoria)
+
+  if (String(generoSeleccionado.value) === id) {
+    generoSeleccionado.value = null
+    categoriaSeleccionada.value = 'todas'
+    sidebarAbierta.value = true
+    return
+  }
+
+  generoSeleccionado.value = genero.idCategoria
+  categoriaSeleccionada.value = `genero:${genero.idCategoria}`
+  sidebarAbierta.value = true
+}
+
+const seleccionarCategoria = (categoria) => {
+  generoSeleccionado.value = categoria.parentId
+  categoriaSeleccionada.value = String(categoria.idCategoria)
+  sidebarAbierta.value = true
+}
+
+const mostrarTodosLosProductos = () => {
+  generoSeleccionado.value = null
+  categoriaSeleccionada.value = 'todas'
+  sidebarAbierta.value = true
+}
 
 const irALogin = () => {
-  sessionStorage.setItem('redirectAfterLogin', router.currentRoute.value.fullPath)
+  sessionStorage.setItem(
+    'redirectAfterLogin',
+    router.currentRoute.value.fullPath
+  )
   router.push('/login')
 }
 
@@ -400,64 +605,131 @@ const irACarrito = () => {
 const irAlLoginSiNoEstaAutenticado = () => {
   if (!estaAutenticado.value) {
     irALogin()
-    return
   }
-}
-
-const protegerAccion = (accion, producto = null) => {
-  if (!estaAutenticado.value) {
-    sessionStorage.setItem('redirectAfterLogin', router.currentRoute.value.fullPath)
-    router.push('/login')
-    return
-  }
-
-  accion(producto)
 }
 
 const intentarAgregar = (producto) => {
-  protegerAccion((item) => {
-    console.log('Usuario autenticado, agregando al carrito:', item)
-    alert(`Agregaste "${item.nombre}" al carrito`)
-  }, producto)
+  if (!estaAutenticado.value) {
+    irALogin()
+    return
+  }
+
+  alert(`Agregaste "${producto.nombre}" al carrito`)
 }
 
 const intentarComprar = (producto) => {
-  protegerAccion((item) => {
-    console.log('Usuario autenticado, compra iniciada:', item)
-    alert(`Listo para comprar "${item.nombre}"`)
-  }, producto)
+  if (!estaAutenticado.value) {
+    irALogin()
+    return
+  }
+
+  alert(`Listo para comprar "${producto.nombre}"`)
 }
 
 const formatPrice = (price) => {
-  return parseFloat(price).toFixed(2)
+  const numero = Number(price)
+  return Number.isFinite(numero) ? numero.toFixed(2) : '0.00'
+}
+
+const precioFinal = (producto) => {
+  const precio = Number(producto.precio)
+  const descuento = Number(producto.descuento) || 0
+
+  if (!Number.isFinite(precio)) return 0
+  return precio * (1 - descuento / 100)
+}
+
+const urlImagen = (imagen) => {
+  if (!imagen) {
+    return 'https://via.placeholder.com/500x600?text=Shopware'
+  }
+
+  if (imagen.startsWith('http')) {
+    return imagen
+  }
+
+  return `http://localhost:3000${imagen}`
+}
+
+const nombreCategoriaProducto = (producto) => {
+  const idCategoria = producto.categoria?.idCategoria
+  const categoria = categorias.value.find(
+    (item) => String(item.idCategoria) === String(idCategoria)
+  )
+
+  return (
+    categoria?.nombreCompleto ||
+    categoria?.nombre ||
+    producto.categoria?.nombre ||
+    'Sin categoría'
+  )
 }
 
 const obtenerProductos = async () => {
+  cargandoProductos.value = true
+
   try {
     const response = await fetch('http://localhost:3000/api/products')
 
-    if (response.ok) {
-      productos.value = await response.json()
-    } else {
-      console.error('Error al cargar productos')
+    if (!response.ok) {
+      throw new Error('T...')
     }
+
+    const resultado = await response.json()
+    productos.value = Array.isArray(resultado) ? resultado : []
   } catch (error) {
-    console.error('Error de red:', error)
+    console.error('Error al cargar productos:', error)
+    productos.value = []
+  } finally {
+    cargandoProductos.value = false
   }
+}
+
+const obtenerCategorias = async () => {
+  cargandoCategorias.value = true
+  errorCategorias.value = false
+
+  try {
+    const response = await fetch('http://localhost:3000/api/categories')
+
+    if (!response.ok) {
+      throw new Error('Error al cargar categorías')
+    }
+
+    const resultado = await response.json()
+    categorias.value = Array.isArray(resultado) ? resultado : []
+  } catch (error) {
+    console.error('Error al cargar categorías:', error)
+    errorCategorias.value = true
+    categorias.value = []
+  } finally {
+    cargandoCategorias.value = false
+  }
+}
+
+const mostrarOfertas = () => {
+  busqueda.value = ''
+  mostrarTodosLosProductos()
+  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })
 }
 
 const cerrarSesion = () => {
   localStorage.removeItem('token')
-  localStorage.removeItem('usuario')
+  localStorage.removeItem('navbar')
   usuario.value = null
   router.push('/login')
 }
 
 onMounted(() => {
-  const usuarioGuardado = localStorage.getItem('usuario')
-  if (usuarioGuardado) {
-    usuario.value = JSON.parse(usuarioGuardado)
+  try {
+    const usuarioGuardado = localStorage.getItem('usuario')
+    usuario.value = usuarioGuardado ? JSON.parse(usuarioGuardado) : null
+  } catch (error) {
+    console.error('No se pudo leer el usuario guardado:', error)
+    usuario.value = null
   }
+
   obtenerProductos()
+  obtenerCategorias()
 })
 </script>
