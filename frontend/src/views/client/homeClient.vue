@@ -11,8 +11,10 @@
           <div class="hidden md:flex flex-1 max-w-md">
             <div class="w-full relative">
               <input
-                type="text"
-                placeholder="Buscar productos..."
+                v-model.trim="busqueda"
+                type="search"
+                placeholder="Buscar productos o categorías..."
+                aria-label="Buscar productos o categorías"
                 class="w-full px-4 py-2 bg-gray-100 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#d4a574] transition-all"
               />
               <button class="absolute right-3 top-2.5 text-gray-500 hover:text-[#d4a574]">
@@ -157,22 +159,42 @@
         </div>
 
         <div class="mb-10 flex flex-wrap gap-3 justify-center">
-          <button class="px-6 py-2 bg-[#d4a574] text-white rounded-full font-semibold hover:bg-[#c89456] transition-all">Todos</button>
-          <button class="px-6 py-2 bg-white border-2 border-gray-300 text-gray-800 rounded-full font-semibold hover:border-[#d4a574] hover:text-[#d4a574] transition-all">Hombres</button>
-          <button class="px-6 py-2 bg-white border-2 border-gray-300 text-gray-800 rounded-full font-semibold hover:border-[#d4a574] hover:text-[#d4a574] transition-all">Mujeres</button>
-          <button class="px-6 py-2 bg-white border-2 border-gray-300 text-gray-800 rounded-full font-semibold hover:border-[#d4a574] hover:text-[#d4a574] transition-all">Accesorios</button>
-          <button class="px-6 py-2 bg-white border-2 border-gray-300 text-gray-800 rounded-full font-semibold hover:border-[#d4a574] hover:text-[#d4a574] transition-all">Ofertas</button>
+          <button
+            type="button"
+            @click="categoriaSeleccionada = 'todas'"
+            :aria-pressed="categoriaSeleccionada === 'todas'"
+            :class="categoriaSeleccionada === 'todas'
+              ? 'bg-[#d4a574] text-white border-[#d4a574]'
+              : 'bg-white text-gray-800 border-gray-300 hover:border-[#d4a574] hover:text-[#d4a574]'"
+            class="px-6 py-2 border-2 rounded-full font-semibold transition-all"
+          >
+            Todas
+          </button>
+
+          <button
+            v-for="categoria in categoriasDisponibles"
+            :key="categoria.id"
+            type="button"
+            @click="categoriaSeleccionada = categoria.id"
+            :aria-pressed="categoriaSeleccionada === categoria.id"
+            :class="categoriaSeleccionada === categoria.id
+              ? 'bg-[#d4a574] text-white border-[#d4a574]'
+              : 'bg-white text-gray-800 border-gray-300 hover:border-[#d4a574] hover:text-[#d4a574]'"
+            class="px-6 py-2 border-2 rounded-full font-semibold transition-all"
+          >
+            {{ categoria.nombre }}
+          </button>
         </div>
 
-        <div v-if="productos.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div v-if="productosFiltrados.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <div
-            v-for="producto in productos"
+            v-for="producto in productosFiltrados"
             :key="producto.idProducto"
             class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-2 group"
           >
             <div class="relative h-64 overflow-hidden bg-gray-200">
               <img
-                :src="`http://localhost:3000${producto.imagen}`"
+                :src="producto.imagen ? `http://localhost:3000${producto.imagen}` : 'https://via.placeholder.com/500x600?text=Shopware'"
                 :alt="producto.nombre"
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
@@ -222,11 +244,12 @@
         </div>
 
         <div v-else class="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-200">
-          <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-          </svg>
-          <p class="text-xl text-gray-600 mb-2">Cargando productos...</p>
-          <p class="text-gray-500">Por favor espera un momento</p>
+          <p class="text-xl text-gray-600 mb-2">
+            {{ productos.length ? 'No se encontraron productos con esos filtros.' : 'Cargando productos...' }}
+          </p>
+          <p class="text-gray-500">
+            {{ productos.length ? 'Prueba con otra búsqueda o categoría.' : 'Por favor espera un momento.' }}
+          </p>
         </div>
       </div>
     </section>
@@ -317,6 +340,44 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const productos = ref([])
 const usuario = ref(null)
+const busqueda = ref('')
+const categoriaSeleccionada = ref('todas')
+
+const categoriasDisponibles = computed(() => {
+  const categorias = new Map()
+
+  for (const producto of productos.value) {
+    const id = String(producto.categoria?.idCategoria ?? 'sin-categoria')
+    const nombre = producto.categoria?.nombre ?? 'Sin categoría'
+
+    if (!categorias.has(id)) {
+      categorias.set(id, { id, nombre })
+    }
+  }
+
+  return Array.from(categorias.values())
+})
+
+const productosFiltrados = computed(() => {
+  const termino = busqueda.value.toLocaleLowerCase('es').trim()
+
+  return productos.value.filter((producto) => {
+    const categoriaId = String(producto.categoria?.idCategoria ?? 'sin-categoria')
+    const nombreProducto = String(producto.nombre ?? '').toLocaleLowerCase('es')
+    const nombreCategoria = String(producto.categoria?.nombre ?? 'Sin categoría').toLocaleLowerCase('es')
+
+    const coincideCategoria =
+      categoriaSeleccionada.value === 'todas' ||
+      categoriaId === categoriaSeleccionada.value
+
+    const coincideBusqueda =
+      !termino ||
+      nombreProducto.includes(termino) ||
+      nombreCategoria.includes(termino)
+
+    return coincideCategoria && coincideBusqueda
+  })
+})
 
 const estaAutenticado = computed(() => {
   return !!localStorage.getItem('token') && !!localStorage.getItem('usuario')
