@@ -29,7 +29,7 @@
             </div>
           </div>
 
-          <div class="order-2 flex items-center gap-4 md:order-3 md:gap-6">
+          <div class="order-2 ml-auto flex items-center gap-4 md:order-3 md:gap-6">
             <button
               type="button"
               class="relative transition-colors hover:text-[#d4a574]"
@@ -85,7 +85,8 @@
 
             <button
               type="button"
-              class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 transition-colors hover:border-[#d4a574] hover:text-[#a8733e]"
+              class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-800 transition-colors hover:border-[#d4a574] hover:text-[#a8733e]"
+              aria-label="Abrir categorías"
               :aria-expanded="sidebarAbierta"
               aria-controls="sidebar-categorias"
               @click="sidebarAbierta = !sidebarAbierta"
@@ -98,7 +99,6 @@
                   d="M4 6h16M4 12h16M4 18h16"
                 />
               </svg>
-              Categorías
             </button>
           </div>
         </div>
@@ -420,7 +420,7 @@
             <li><a href="#" class="transition-colors hover:text-[#d4a574]">Contacto</a></li>
             <li><a href="#" class="transition-colors hover:text-[#d4a574]">Cambios y Devoluciones</a></li>
             <li><a href="#" class="transition-colors hover:text-[#d4a574]">Envíos</a></li>
-            <li><a href="#" class="transition-colors hover:text-[#d4a574]">Ayuda</a></li>
+            <li><a href="#" class="transition-colors hover:text-[#d4a574]">Preguntas Frecuentes</a></li>
           </ul>
         </div>
 
@@ -672,7 +672,7 @@ const obtenerProductos = async () => {
     const response = await fetch('http://localhost:3000/api/products')
 
     if (!response.ok) {
-      throw new Error('T...')
+      throw new Error('Error al cargar productos')
     }
 
     const resultado = await response.json()
@@ -715,7 +715,7 @@ const mostrarOfertas = () => {
 
 const cerrarSesion = () => {
   localStorage.removeItem('token')
-  localStorage.removeItem('navbar')
+  localStorage.removeItem('usuario')
   usuario.value = null
   router.push('/login')
 }
@@ -723,7 +723,7 @@ const cerrarSesion = () => {
 onMounted(() => {
   try {
     const usuarioGuardado = localStorage.getItem('usuario')
-    usuario.value = usuarioGuardado ? JSON.parse(usuarioGuardado) : null
+    usuario.value = usuarioGuardado ? JSON.stringify(usuarioGuardado) : null
   } catch (error) {
     console.error('No se pudo leer el usuario guardado:', error)
     usuario.value = null
