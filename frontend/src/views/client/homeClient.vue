@@ -595,7 +595,8 @@ const irALogin = () => {
 
 const irACarrito = () => {
   if (!estaAutenticado.value) {
-    irALogin()
+    sessionStorage.setItem('redirectAfterLogin', '/carrito')
+    router.push('/login')
     return
   }
 

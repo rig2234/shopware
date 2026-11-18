@@ -130,13 +130,15 @@ const handleLogin = async () => {
     mensaje.texto = '¡Inicio de sesión exitoso!';
 
     setTimeout(() => {
-      // Redirigir según el idRol
-      if (data.usuario.idRol === 2) {
-        router.push('/admin/dashboard'); // Redirige al Dashboard de Admin
-      } else {
-        router.push('/tienda'); // Redirige al catálogo de clientes
-      }
-    }, 800);
+  const destino = sessionStorage.getItem('redirectAfterLogin')
+  sessionStorage.removeItem('redirectAfterLogin')
+
+  if (data.usuario.idRol === 2) {
+    router.push('/admin/dashboard')
+  } else {
+    router.push(destino || '/tienda')
+  }
+}, 800)
 
   } catch (error) {
     mensaje.error = true;
