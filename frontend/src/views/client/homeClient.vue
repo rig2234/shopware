@@ -608,13 +608,40 @@ const irAlLoginSiNoEstaAutenticado = () => {
   }
 }
 
-const intentarAgregar = (producto) => {
+const agregarAlCarrito = async (producto) => {
+  const response = await fetch('http://localhost:3000/api/cart', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token')}`
+    },
+    body: JSON.stringify({
+      idProducto: producto.idProducto,
+      cantidad: 1
+    })
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'No se pudo agregar el producto')
+  }
+
+  alert(`Agregaste "${producto.nombre}" al carrito`)
+}
+
+const intentarAgregar = async (producto) => {
   if (!estaAutenticado.value) {
+    sessionStorage.setItem('pendingCartProduct', String(producto.idProducto))
     irALogin()
     return
   }
 
-  alert(`Agregaste "${producto.nombre}" al carrito`)
+  try {
+    await agregarAlCarrito(producto)
+  } catch (error) {
+    alert(error.message)
+  }
 }
 
 const intentarComprar = (producto) => {
@@ -667,6 +694,19 @@ const nombreCategoriaProducto = (producto) => {
 
 const obtenerProductos = async () => {
   cargandoProductos.value = true
+
+  const productoPendiente = sessionStorage.getItem('pendingCartProduct')
+
+if (productoPendiente && localStorage.getItem('token')) {
+  const producto = productos.value.find(
+    (item) => String(item.idProducto) === productoPendiente
+  )
+
+  if (producto) {
+    sessionStorage.removeItem('pendingCartProduct')
+    agregarAlCarrito(producto).catch((error) => alert(error.message))
+  }
+}
 
   try {
     const response = await fetch('http://localhost:3000/api/products')
@@ -723,10 +763,27 @@ const cerrarSesion = () => {
 onMounted(() => {
   try {
     const usuarioGuardado = localStorage.getItem('usuario')
-    usuario.value = usuarioGuardado ? JSON.stringify(usuarioGuardado) : null
+    usuario.value = usuarioGuardado ? JSON.parse(usuarioGuardado) : null
   } catch (error) {
     console.error('No se pudo leer el usuario guardado:', error)
     usuario.value = null
+  }
+
+  const productoPendiente = sessionStorage.getItem('pendingCartProduct')
+
+  if (productoPendiente && localStorage.getItem('token')) {
+    sessionStorage.removeItem('pendingCartProduct')
+
+    const producto = productos.value.find(
+      (item) => String(item.idProducto) === productoPendiente
+    )
+
+    // Los productos todavía se están cargando; se retoma cuando termine la carga.
+    if (producto) {
+      agregarAlCarrito(producto).catch((error) => alert(error.message))
+    } else {
+      sessionStorage.setItem('pendingCartProduct', productoPendiente)
+    }
   }
 
   obtenerProductos()

@@ -3,6 +3,7 @@ import RegisterView from '../views/client/RegisterView.vue'
 import LoginView from '../views/client/LoginView.vue'
 import HomeClient from '../views/client/homeClient.vue'
 import AdminPanel from '../views/admin/adminPanel.vue'
+import CartView from '../views/client/CartView.vue'
 
 const routes = [
   {
@@ -34,7 +35,13 @@ const routes = [
   {
     path: '/:pathMatch(.*)*',
     redirect: '/tienda'
-  }
+  },
+  {
+  path: '/carrito',
+  name: 'Carrito',
+  component: CartView,
+  meta: { requiresAuth: true }
+}
 ]
 
 const router = createRouter({

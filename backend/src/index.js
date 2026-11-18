@@ -9,6 +9,7 @@ import productsRoutes from './routes/products.routes.js';
 import categoriesRoutes from './routes/categories.routes.js';
 import tallasRoutes from './routes/tallas.routes.js';
 import usersRoutes from './routes/users.routes.js';
+import cartRoutes from './routes/cart.routes.js';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/tallas', tallasRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/cart', cartRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor Backend activo' });
