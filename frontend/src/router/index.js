@@ -4,6 +4,7 @@ import LoginView from '../views/client/LoginView.vue'
 import HomeClient from '../views/client/homeClient.vue'
 import AdminPanel from '../views/admin/adminPanel.vue'
 import CartView from '../views/client/CartView.vue'
+import ProductView from '../views/client/ProductView.vue'
 
 const routes = [
   {
@@ -25,6 +26,12 @@ const routes = [
     path: '/tienda',
     name: 'HomeClient',
     component: HomeClient
+  },
+  {
+    path: '/producto/:id',
+    name: 'Producto',
+    component: ProductView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/admin/dashboard',

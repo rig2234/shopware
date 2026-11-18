@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getAllProducts,
+  getProductById,
   createProduct,
   updateProduct,
   deleteProduct
@@ -42,5 +43,6 @@ router.get('/', getAllProducts);
 router.post('/', upload.single('imagen'), createProduct);
 router.put('/:id', upload.single('imagen'), updateProduct);
 router.delete('/:id', deleteProduct);
+router.get('/:id', getProductById)
 
 export default router;

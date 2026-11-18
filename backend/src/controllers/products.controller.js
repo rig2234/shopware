@@ -438,3 +438,33 @@ export const deleteProduct = async (req, res) => {
     })
   }
 }
+
+export const getProductById = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID de producto inválido' })
+    }
+
+    const producto = await prisma.producto.findUnique({
+      where: { idProducto: id },
+      include: {
+        categoria: true,
+        tallas: {
+          include: { talla: true },
+          orderBy: { idTalla: 'asc' }
+        }
+      }
+    })
+
+    if (!producto) {
+      return res.status(404).json({ error: 'Producto no encontrado' })
+    }
+
+    return res.json(producto)
+  } catch (error) {
+    console.error('Error obteniendo producto:', error)
+    return res.status(500).json({ error: 'No se pudo cargar el producto' })
+  }
+}
