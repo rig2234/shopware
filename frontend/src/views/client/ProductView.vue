@@ -75,7 +75,7 @@
                     : 'hover:border-[#d4a574]'
                 ]"
                 class="min-w-14 rounded-lg border-2 px-4 py-3 font-semibold"
-                @click="tallaSeleccionada = item.idProductoTalla"
+                @click="seleccionarTalla(item)"
               >
                 {{ item.talla?.nombre || 'Talla' }}
               </button>
@@ -92,6 +92,26 @@
               Talla agotada.
             </p>
           </fieldset>
+
+          <div v-if="tallaActual && Number(tallaActual.stock) > 0" class="mb-6">
+  <label for="cantidad" class="mb-2 block font-semibold">
+    Cantidad disponible: {{ tallaActual.stock }}
+  </label>
+
+  <select
+    id="cantidad"
+    v-model.number="cantidad"
+    class="w-24 rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-[#d4a574] focus:outline-none"
+  >
+    <option
+      v-for="opcion in opcionesCantidad"
+      :key="opcion"
+      :value="opcion"
+    >
+      {{ opcion }}
+    </option>
+  </select>
+</div>
 
           <p v-if="mensaje" class="mb-4 text-sm" :class="errorAgregar ? 'text-red-600' : 'text-green-700'">
             {{ mensaje }}
@@ -175,6 +195,20 @@ const cargarProducto = async () => {
   }
 }
 
+const cantidad = ref(1)
+
+const opcionesCantidad = computed(() => {
+  const stock = Number(tallaActual.value?.stock || 0)
+  const maximo = Math.min(stock, 99)
+
+  return Array.from({ length: maximo }, (_, indice) => indice + 1)
+})
+
+const seleccionarTalla = (item) => {
+  tallaSeleccionada.value = item.idProductoTalla
+  cantidad.value = 1
+}
+
 const agregarAlCarrito = async () => {
   if (!tallaSeleccionada.value) {
     errorAgregar.value = true
@@ -196,7 +230,7 @@ const agregarAlCarrito = async () => {
       body: JSON.stringify({
         idProducto: producto.value.idProducto,
         idProductoTalla: tallaSeleccionada.value,
-        cantidad: 1
+        cantidad: cantidad.value
       })
     })
 
