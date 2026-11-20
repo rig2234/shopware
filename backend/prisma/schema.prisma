@@ -34,8 +34,42 @@ model Usuario {
   pedidos          Pedido[]
   facturas         Factura[]
   actividades      ActividadSesion[]
+  pagosPendientes  PagoPendiente[]
 
   @@map("usuarios")
+}
+
+model PagoPendiente {
+  idPagoPendiente       Int                    @id @default(autoincrement()) @map("id_pago_pendiente")
+  idUsuario             Int                    @map("id_usuario")
+  stripePaymentIntentId String                 @unique @map("stripe_payment_intent_id") @db.VarChar(255)
+  total                 Decimal                @db.Decimal(10, 2)
+  moneda                String                 @default("mxn") @db.VarChar(10)
+  estado                String                 @default("PENDING") @db.VarChar(20)
+  idPedido              Int?                   @map("id_pedido")
+  expiresAt             DateTime               @map("expires_at")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  paidAt                DateTime?              @map("paid_at")
+
+  usuario               Usuario                @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+  detalles              DetallePagoPendiente[]
+
+  @@map("pagos_pendientes")
+}
+
+model DetallePagoPendiente {
+  idPagoPendiente Int      @map("id_pago_pendiente")
+  idProducto      Int      @map("id_producto")
+  idProductoTalla Int      @map("id_producto_talla")
+  nombreProducto  String   @map("nombre_producto") @db.VarChar(100)
+  nombreTalla     String   @map("nombre_talla") @db.VarChar(10)
+  cantidad        Int
+  precioUnitario  Decimal  @map("precio_unitario") @db.Decimal(10, 2)
+
+  pagoPendiente   PagoPendiente @relation(fields: [idPagoPendiente], references: [idPagoPendiente], onDelete: Cascade)
+
+  @@id([idPagoPendiente, idProducto, idProductoTalla])
+  @@map("detalle_pago_pendiente")
 }
 
 // --------------------------------------------------------

@@ -221,11 +221,18 @@ const agregarAlCarrito = async () => {
   errorAgregar.value = false
 
   try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      sessionStorage.setItem('redirectAfterLogin', route.fullPath)
+      await router.push('/login')
+      return
+    }
+
     const response = await fetch('http://localhost:3000/api/cart', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         idProducto: producto.value.idProducto,

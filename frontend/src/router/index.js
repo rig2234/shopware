@@ -5,6 +5,7 @@ import HomeClient from '../views/client/homeClient.vue'
 import AdminPanel from '../views/admin/adminPanel.vue'
 import CartView from '../views/client/CartView.vue'
 import ProductView from '../views/client/ProductView.vue'
+import PaymentView from '../views/client/PaymentView.vue'
 
 const routes = [
   {
@@ -30,8 +31,7 @@ const routes = [
   {
     path: '/producto/:id',
     name: 'Producto',
-    component: ProductView,
-    meta: { requiresAuth: true }
+    component: ProductView
   },
   {
     path: '/admin/dashboard',
@@ -44,11 +44,17 @@ const routes = [
     redirect: '/tienda'
   },
   {
-  path: '/carrito',
-  name: 'Carrito',
-  component: CartView,
-  meta: { requiresAuth: true }
-}
+    path: '/carrito',
+    name: 'Carrito',
+    component: CartView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/pago',
+    name: 'Pago',
+    component: PaymentView,
+    meta: { requiresAuth: true }
+  }
 ]
 
 const router = createRouter({

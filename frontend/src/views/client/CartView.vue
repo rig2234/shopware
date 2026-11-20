@@ -127,15 +127,14 @@
 
           <button
             type="button"
-            class="w-full cursor-not-allowed rounded-xl bg-[#d4a574] px-5 py-3 font-bold text-white opacity-80"
-            title="La pasarela de pago se implementará más adelante"
-            @click="alertaCompra"
+            class="w-full rounded-xl bg-[#292521] px-5 py-3 font-bold text-white transition hover:bg-[#a8733e]"
+            @click="continuarCompra"
           >
             Continuar con la compra
           </button>
 
           <p class="mt-3 text-center text-xs leading-relaxed text-gray-500">
-            La compra y el pago estarán disponibles próximamente.
+            El pago se procesa de forma segura con Stripe.
           </p>
         </aside>
       </section>
@@ -250,8 +249,8 @@ const eliminarItem = async (idCarrito) => {
   }
 }
 
-const alertaCompra = () => {
-  alert('La pasarela de pago se implementará más adelante.')
+const continuarCompra = () => {
+  router.push('/pago')
 }
 
 onMounted(cargarCarrito)
