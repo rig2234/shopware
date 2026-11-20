@@ -1,31 +1,31 @@
 <template>
   <main class="min-h-screen bg-[#f7f5f2] px-4 py-8 text-[#292521] sm:px-6 lg:py-12">
-    <div class="mx-auto max-w-6xl">
+    <div class="mx-auto max-w-4xl">
       <header class="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p class="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#a8733e]">
             Shopware
           </p>
-          <h1 class="text-3xl font-bold sm:text-4xl">Mi carrito</h1>
+          <h1 class="text-3xl font-bold sm:text-4xl">Pago seguro</h1>
           <p class="mt-2 text-sm text-gray-500">
-            Revisa tus productos antes de continuar.
+            Completa el pago de prueba con Stripe.
           </p>
         </div>
 
         <router-link
-          to="/tienda"
-          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold transition hover:border-[#d4a574] hover:text-[#a8733e]"
+          to="/carrito"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold hover:border-[#d4a574]"
         >
-          ← Seguir comprando
+          ← Volver al carrito
         </router-link>
       </header>
 
-      <div
+      <section
         v-if="cargando"
         class="rounded-2xl bg-white p-8 text-center text-gray-500 shadow-sm"
       >
-        Cargando tu carrito...
-      </div>
+        Preparando el pago...
+      </section>
 
       <section
         v-else-if="error"
@@ -34,224 +34,377 @@
         <p class="font-semibold text-red-700">{{ error }}</p>
         <button
           type="button"
-          class="mt-4 rounded-lg bg-[#292521] px-5 py-2 text-sm font-semibold text-white hover:bg-[#a8733e]"
-          @click="cargarCarrito"
+          class="mt-4 rounded-lg bg-[#292521] px-5 py-2 text-sm font-semibold text-white"
+          @click="cargarPago"
         >
           Intentar de nuevo
         </button>
       </section>
 
       <section
-        v-else-if="items.length"
-        class="grid items-start gap-6 lg:grid-cols-[1fr_340px]"
+        v-else-if="pagoCompletado"
+        class="rounded-2xl border border-green-200 bg-white p-10 text-center shadow-sm"
       >
-        <div class="space-y-4">
-          <article
-            v-for="item in items"
-            :key="item.idCarrito"
-            class="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5"
-          >
-            <div class="flex flex-col gap-4 sm:flex-row">
-              <img
-                :src="urlImagen(item.producto?.imagen)"
-                :alt="item.producto?.nombre || 'Producto Shopware'"
-                class="h-48 w-full rounded-xl bg-gray-100 object-cover sm:h-36 sm:w-32"
-              />
-
-              <div class="flex min-w-0 flex-1 flex-col justify-between gap-4">
-                <div>
-                  <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        Producto
-                      </p>
-                      <h2 class="mt-1 text-lg font-bold">
-                        {{ item.producto?.nombre || 'Producto no disponible' }}
-                      </h2>
-                    </div>
-
-                    <button
-                      type="button"
-                      class="text-sm font-medium text-red-600 transition hover:text-red-800 disabled:opacity-50"
-                      :disabled="eliminando === item.idCarrito"
-                      @click="eliminarItem(item.idCarrito)"
-                    >
-                      {{ eliminando === item.idCarrito ? 'Eliminando…' : 'Eliminar' }}
-                    </button>
-                  </div>
-
-                  <div class="mt-3 flex flex-wrap gap-2 text-sm">
-                    <span class="rounded-full bg-[#f7f1e9] px-3 py-1 text-[#8b633d]">
-                      Talla:
-                      <strong>
-                        {{ item.productoTalla?.talla?.nombre || 'No especificada' }}
-                      </strong>
-                    </span>
-                    <span class="rounded-full bg-gray-100 px-3 py-1 text-gray-600">
-                      Cantidad: {{ item.cantidad }}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="flex items-end justify-between border-t border-gray-100 pt-3">
-                  <p class="text-sm text-gray-500">
-                    ${{ formatPrice(item.precioUnitario) }} por unidad
-                  </p>
-                  <p class="text-lg font-bold text-[#a8733e]">
-                    ${{ formatPrice(item.subtotal) }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </article>
+        <div
+          class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl text-green-700"
+        >
+          ✓
         </div>
+        <h2 class="text-2xl font-bold">¡Pago completado!</h2>
+        <p v-if="idPedido" class="mt-2 text-gray-500">
+          Número de pedido: {{ idPedido }}
+        </p>
 
-        <aside class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm lg:sticky lg:top-6">
-          <h2 class="text-xl font-bold">Resumen del pedido</h2>
+        <router-link
+          to="/tienda"
+          class="mt-6 inline-flex rounded-xl bg-[#292521] px-6 py-3 font-semibold text-white"
+        >
+          Volver a la tienda
+        </router-link>
+      </section>
 
-          <div class="mt-5 space-y-3 border-b border-gray-100 pb-5 text-sm">
-            <div class="flex justify-between text-gray-600">
-              <span>Productos</span>
-              <span>{{ cantidadProductos }}</span>
-            </div>
-            <div class="flex justify-between text-gray-600">
-              <span>Envío</span>
-              <span class="text-gray-500">Se calculará después</span>
-            </div>
-          </div>
+      <section
+        v-else-if="carritoVacio"
+        class="rounded-2xl border border-gray-100 bg-white px-6 py-16 text-center shadow-sm"
+      >
+        <h2 class="text-2xl font-bold">Tu carrito está vacío</h2>
 
-          <div class="flex justify-between py-5 text-lg font-bold">
-            <span>Subtotal</span>
-            <span class="text-[#a8733e]">${{ formatPrice(total) }}</span>
-          </div>
-
-          <button
-            type="button"
-            class="w-full rounded-xl bg-[#292521] px-5 py-3 font-bold text-white transition hover:bg-[#a8733e]"
-            @click="continuarCompra"
-          >
-            Continuar con la compra
-          </button>
-
-          <p class="mt-3 text-center text-xs leading-relaxed text-gray-500">
-            El pago se procesa de forma segura con Stripe.
-          </p>
-        </aside>
+        <router-link
+          to="/tienda"
+          class="mt-6 inline-flex rounded-xl bg-[#292521] px-6 py-3 font-semibold text-white"
+        >
+          Explorar productos
+        </router-link>
       </section>
 
       <section
         v-else
-        class="rounded-2xl border border-gray-100 bg-white px-6 py-16 text-center shadow-sm"
+        class="grid items-start gap-6 md:grid-cols-[1fr_330px]"
       >
-        <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f7f1e9] text-3xl text-[#a8733e]" aria-hidden="true">
-          🛍️
-        </div>
-        <h2 class="text-2xl font-bold">Tu carrito está vacío</h2>
-        <p class="mx-auto mt-2 max-w-md text-gray-500">
-          Explora la tienda y agrega los productos que te gusten.
-        </p>
-        <router-link
-          to="/tienda"
-          class="mt-6 inline-flex rounded-xl bg-[#292521] px-6 py-3 font-semibold text-white transition hover:bg-[#a8733e]"
+        <form
+          class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+          @submit.prevent="pagar"
         >
-          Explorar productos
-        </router-link>
+          <h2 class="text-xl font-bold">Datos de pago</h2>
+          <p class="mt-2 text-sm text-gray-500">
+            Usa una tarjeta de prueba de Stripe. No se realizará un cargo real.
+          </p>
+
+          <label
+            for="stripe-card"
+            class="mb-2 mt-6 block text-sm font-semibold"
+          >
+            Tarjeta
+          </label>
+
+          <div
+            id="stripe-card"
+            class="min-h-12 rounded-lg border border-gray-300 bg-white p-4"
+          ></div>
+
+          <p v-if="errorTarjeta" class="mt-2 text-sm text-red-600">
+            {{ errorTarjeta }}
+          </p>
+
+          <p v-if="mensajeError" class="mt-4 text-sm text-red-600">
+            {{ mensajeError }}
+          </p>
+
+          <button
+            type="submit"
+            class="mt-6 w-full rounded-xl bg-[#292521] px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="procesando || !stripe || confirmarPendiente"
+            v-if="false"
+          >
+            Pagar
+          </button>
+
+          <button
+            type="submit"
+            class="mt-6 w-full rounded-xl bg-[#292521] px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="procesando || !stripe"
+          >
+            {{ procesando ? 'Procesando...' : `Pagar ${formatearPrecio(total)}` }}
+          </button>
+
+          <p class="mt-3 text-center text-xs text-gray-500">
+            Tarjeta de prueba:
+            <strong>4242 4242 4242 4242</strong>
+          </p>
+        </form>
+
+        <aside class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 class="text-xl font-bold">Resumen del pedido</h2>
+
+          <ul class="mt-4 divide-y divide-gray-100">
+            <li
+              v-for="item in items"
+              :key="item.idCarrito"
+              class="flex justify-between gap-4 py-3 text-sm"
+            >
+              <span class="text-gray-600">
+                {{ item.producto?.nombre || 'Producto' }}
+                <span class="text-gray-400">× {{ item.cantidad }}</span>
+              </span>
+
+              <span class="shrink-0 font-semibold">
+                {{ formatearPrecio(item.subtotal) }}
+              </span>
+            </li>
+          </ul>
+
+          <div class="mt-4 flex justify-between border-t border-gray-100 pt-4 text-lg font-bold">
+            <span>Total</span>
+            <span class="text-[#a8733e]">
+              {{ formatearPrecio(total) }}
+            </span>
+          </div>
+        </aside>
       </section>
     </div>
   </main>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { loadStripe } from '@stripe/stripe-js'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const items = ref([])
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+
 const cargando = ref(true)
+const procesando = ref(false)
 const error = ref('')
-const eliminando = ref(null)
+const mensajeError = ref('')
+const errorTarjeta = ref('')
+const carritoVacio = ref(false)
+const pagoCompletado = ref(false)
+const confirmarPendiente = ref(false)
 
-const total = computed(() =>
-  items.value.reduce((suma, item) => suma + Number(item.subtotal || 0), 0)
-)
+const items = ref([])
+const total = ref(0)
+const idPedido = ref('')
+const paymentIntentId = ref('')
+const clientSecret = ref('')
 
-const cantidadProductos = computed(() =>
-  items.value.reduce((suma, item) => suma + Number(item.cantidad || 0), 0)
-)
+let stripe = null
+let elementoTarjeta = null
 
-const formatPrice = (price) => {
-  const numero = Number(price)
-  return Number.isFinite(numero) ? numero.toFixed(2) : '0.00'
+const formatearPrecio = (valor) => {
+  const numero = Number(valor)
+
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(Number.isFinite(numero) ? numero : 0)
 }
 
-const urlImagen = (imagen) => {
-  if (!imagen) return 'https://via.placeholder.com/300x360?text=Shopware'
-  if (imagen.startsWith('http')) return imagen
-  return `http://localhost:3000${imagen}`
-}
-
-const cargarCarrito = async () => {
+const cargarPago = async () => {
   cargando.value = true
   error.value = ''
+  mensajeError.value = ''
+  errorTarjeta.value = ''
+  carritoVacio.value = false
+  pagoCompletado.value = false
+
+  if (elementoTarjeta) {
+    elementoTarjeta.destroy()
+    elementoTarjeta = null
+  }
 
   try {
     const token = localStorage.getItem('token')
 
     if (!token) {
-      sessionStorage.setItem('redirectAfterLogin', '/carrito')
+      sessionStorage.setItem('redirectAfterLogin', '/pago')
       await router.push('/login')
       return
     }
 
-    const response = await fetch('http://localhost:3000/api/cart', {
+    if (!STRIPE_PUBLIC_KEY) {
+      throw new Error(
+        'Falta configurar VITE_STRIPE_PUBLISHABLE_KEY en frontend/.env'
+      )
+    }
+
+    stripe = await loadStripe(STRIPE_PUBLIC_KEY)
+
+    if (!stripe) {
+      throw new Error('No se pudo inicializar Stripe')
+    }
+
+    const respuestaCarrito = await fetch(`${API_URL}/api/cart`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     })
 
-    const data = await response.json()
+    const carrito = await respuestaCarrito.json()
 
-    if (!response.ok) {
-      throw new Error(data.message || 'No se pudo cargar el carrito')
+    if (!respuestaCarrito.ok) {
+      throw new Error(carrito.message || 'No se pudo cargar el carrito')
     }
 
-    items.value = Array.isArray(data) ? data : []
-  } catch (err) {
-    error.value = err.message || 'Ocurrió un error al cargar el carrito'
+    items.value = Array.isArray(carrito) ? carrito : []
+
+    if (!items.value.length) {
+      carritoVacio.value = true
+      cargando.value = false
+      return
+    }
+
+    const respuestaIntent = await fetch(
+      `${API_URL}/api/payments/create-intent`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+
+    const datosIntent = await respuestaIntent.json()
+
+    if (!respuestaIntent.ok) {
+      throw new Error(
+        datosIntent.message || 'No se pudo iniciar el pago'
+      )
+    }
+
+    paymentIntentId.value = datosIntent.paymentIntentId
+    clientSecret.value = datosIntent.clientSecret
+    total.value = Number(datosIntent.total)
+
+    if (!paymentIntentId.value || !clientSecret.value) {
+      throw new Error(
+        'El servidor no devolvió los datos necesarios para Stripe'
+      )
+    }
+
+    cargando.value = false
+    await nextTick()
+
+    const contenedorTarjeta = document.querySelector('#stripe-card')
+
+    if (!contenedorTarjeta) {
+      throw new Error(
+        'No se encontró el contenedor de la tarjeta en el formulario'
+      )
+    }
+
+    const elementos = stripe.elements()
+
+    elementoTarjeta = elementos.create('card', {
+      style: {
+        base: {
+          color: '#292521',
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '16px',
+          '::placeholder': {
+            color: '#9ca3af'
+          }
+        },
+        invalid: {
+          color: '#dc2626'
+        }
+      }
+    })
+
+    elementoTarjeta.mount(contenedorTarjeta)
+
+    elementoTarjeta.on('change', (evento) => {
+      errorTarjeta.value = evento.error?.message || ''
+    })
+  } catch (errorCapturado) {
+    error.value =
+      errorCapturado.message || 'No se pudo preparar el pago'
   } finally {
     cargando.value = false
   }
 }
 
-const eliminarItem = async (idCarrito) => {
-  eliminando.value = idCarrito
-  error.value = ''
+const confirmarPedido = async () => {
+  const token = localStorage.getItem('token')
+
+  const respuesta = await fetch(`${API_URL}/api/payments/confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      paymentIntentId: paymentIntentId.value
+    })
+  })
+
+  const datos = await respuesta.json()
+
+  if (!respuesta.ok) {
+    throw new Error(
+      datos.message ||
+        'Stripe confirmó el pago, pero no se pudo registrar el pedido'
+    )
+  }
+
+  idPedido.value = datos.idPedido
+  pagoCompletado.value = true
+  confirmarPendiente.value = false
+}
+
+const pagar = async () => {
+  if (procesando.value) return
+
+  procesando.value = true
+  mensajeError.value = ''
 
   try {
-    const response = await fetch(`http://localhost:3000/api/cart/${idCarrito}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || 'No se pudo eliminar el producto')
+    if (confirmarPendiente.value) {
+      await confirmarPedido()
+      return
     }
 
-    items.value = items.value.filter((item) => item.idCarrito !== idCarrito)
-  } catch (err) {
-    error.value = err.message || 'No se pudo eliminar el producto'
+    const resultado = await stripe.confirmCardPayment(
+      clientSecret.value,
+      {
+        payment_method: {
+          card: elementoTarjeta
+        }
+      }
+    )
+
+    if (resultado.error) {
+      throw new Error(
+        resultado.error.message || 'No se pudo procesar la tarjeta'
+      )
+    }
+
+    if (resultado.paymentIntent?.status !== 'succeeded') {
+      throw new Error(
+        `El pago no se completó. Estado: ${
+          resultado.paymentIntent?.status || 'desconocido'
+        }`
+      )
+    }
+
+    confirmarPendiente.value = true
+    await confirmarPedido()
+  } catch (errorCapturado) {
+    mensajeError.value =
+      errorCapturado.message || 'No se pudo completar el pago'
   } finally {
-    eliminando.value = null
+    procesando.value = false
   }
 }
 
-const continuarCompra = () => {
-  router.push('/pago')
-}
+onMounted(cargarPago)
 
-onMounted(cargarCarrito)
+onBeforeUnmount(() => {
+  if (elementoTarjeta) {
+    elementoTarjeta.destroy()
+    elementoTarjeta = null
+  }
+})
 </script>
