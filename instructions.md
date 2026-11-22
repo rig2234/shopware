@@ -1,6 +1,6 @@
 diseño desacoplado (frontend y backend)
 
-frontend: vue, tailwind css, pinia, vue router
+frontend: vue 3.4, tailwind 4 css, pinia, vue router
 
 backend: node.js express, prisma orm 5.22
 
