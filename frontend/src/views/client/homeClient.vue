@@ -85,11 +85,12 @@
 
             <button
               type="button"
-              class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-800 transition-colors hover:border-[#d4a574] hover:text-[#a8733e]"
-              aria-label="Abrir categorías"
+              ref="sidebarTrigger"
+              class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-800 transition-colors hover:border-[#d4a574] hover:text-[#a8733e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
+              :aria-label="sidebarAbierta ? 'Cerrar panel lateral' : 'Abrir panel lateral'"
               :aria-expanded="sidebarAbierta"
-              aria-controls="sidebar-categorias"
-              @click="sidebarAbierta = !sidebarAbierta"
+              aria-controls="sidebar-tienda"
+              @click="alternarSidebar"
             >
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -198,19 +199,34 @@
         </div>
 
         <aside
-          id="sidebar-categorias"
-          class="fixed bottom-0 right-0 top-0 z-[60] w-[min(21rem,88vw)] overflow-y-auto border-l border-gray-200 bg-white p-5 pt-6 shadow-2xl transition-transform duration-300 ease-in-out"
+          id="sidebar-tienda"
+          role="complementary"
+          aria-label="Navegación de la tienda"
+          class="fixed bottom-0 right-0 top-0 z-[60] w-[min(24rem,92vw)] overflow-y-auto border-l border-gray-200 bg-[#fbfaf8] p-5 pt-6 shadow-2xl transition-transform duration-300 ease-in-out sm:p-6"
           :class="sidebarAbierta ? 'translate-x-0' : 'translate-x-full'"
           :aria-hidden="!sidebarAbierta"
+          :inert="!sidebarAbierta"
+          @keydown.esc="cerrarSidebar"
         >
-          <div class="mb-5 flex items-center justify-between border-b border-gray-200 pb-4">
-            <h3 class="text-lg font-bold text-[#1a1a1a]">Explorar catálogo</h3>
+          <div class="mb-6 flex items-start justify-between">
+            <div class="flex items-center gap-3">
+              <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1a1a1a] text-[#e4ba8e]">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h16M4 17h10" />
+                </svg>
+              </span>
+              <div>
+                <h2 class="text-lg font-bold text-[#1a1a1a]">Tu espacio</h2>
+                <p class="mt-0.5 text-xs text-gray-500">Explora y organiza tu compra</p>
+              </div>
+            </div>
 
             <button
               type="button"
-              class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
-              aria-label="Cerrar categorías"
-              @click="sidebarAbierta = false"
+              ref="sidebarCloseButton"
+              class="rounded-xl p-2 text-gray-500 transition-colors hover:bg-white hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
+              aria-label="Cerrar panel lateral"
+              @click="cerrarSidebar"
             >
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -218,27 +234,58 @@
             </button>
           </div>
 
-          <button
-            type="button"
-            @click="mostrarTodosLosProductos"
-            :class="categoriaSeleccionada === 'todas'
-              ? 'bg-[#d4a574] text-white'
-              : 'text-gray-700 hover:bg-gray-100'"
-            class="mb-2 w-full rounded-lg px-4 py-3 text-left font-semibold transition-colors"
-          >
-            Todos los productos
-          </button>
+          <nav class="grid grid-cols-2 gap-2 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm" aria-label="Secciones del panel lateral">
+            <button
+              type="button"
+              :aria-pressed="seccionSidebar === 'categorias'"
+              :class="seccionSidebar === 'categorias'
+                ? 'bg-[#1a1a1a] text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50'"
+              class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
+              @click="seccionSidebar = 'categorias'"
+            >
+              Categorías
+            </button>
+            <button
+              type="button"
+              :aria-pressed="seccionSidebar === 'direccion'"
+              :class="seccionSidebar === 'direccion'
+                ? 'bg-[#1a1a1a] text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50'"
+              class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
+              @click="abrirSeccionDireccion"
+            >
+              Mi dirección
+            </button>
+          </nav>
 
-          <p v-if="cargandoCategorias" class="px-4 py-2 text-sm text-gray-500">
-            Cargando categorías...
-          </p>
+          <section v-show="seccionSidebar === 'categorias'" class="mt-5">
+            <div class="mb-4 rounded-2xl bg-gradient-to-br from-[#27231f] to-[#51402f] p-4 text-white">
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#e4ba8e]">Colección Shopware</p>
+              <p class="mt-1 text-sm text-white/80">Encuentra tu próximo estilo favorito.</p>
+            </div>
 
-          <p v-else-if="errorCategorias" class="px-4 py-2 text-sm text-red-600">
-            No se pudieron cargar las categorías.
-          </p>
+            <button
+              type="button"
+              @click="mostrarTodosLosProductos"
+              :class="categoriaSeleccionada === 'todas'
+                ? 'bg-[#f1e4d5] text-[#865b33]'
+                : 'text-gray-700 hover:bg-white'"
+              class="mb-3 w-full rounded-xl px-4 py-3 text-left font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
+            >
+              Todos los productos
+            </button>
 
-          <div v-else class="space-y-2">
-            <div v-for="genero in categoriasRaiz" :key="genero.idCategoria">
+            <p v-if="cargandoCategorias" class="rounded-xl bg-white px-4 py-3 text-sm text-gray-500" role="status">
+              Cargando categorías...
+            </p>
+
+            <div v-else-if="errorCategorias" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              No se pudieron cargar las categorías.
+            </div>
+
+            <div v-else class="space-y-2">
+              <div v-for="genero in categoriasRaiz" :key="genero.idCategoria" class="rounded-xl bg-white p-1 shadow-sm">
               <button
                 type="button"
                 @click="seleccionarGenero(genero)"
@@ -246,17 +293,17 @@
                 :class="String(generoSeleccionado) === String(genero.idCategoria)
                   ? 'bg-[#f8f1e9] text-[#a8733e]'
                   : 'text-gray-800 hover:bg-gray-100'"
-                class="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left font-bold transition-colors"
+                class="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
               >
                 <span>{{ genero.nombre }}</span>
-                <span aria-hidden="true">
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#f7f3ee] text-sm" aria-hidden="true">
                   {{ String(generoSeleccionado) === String(genero.idCategoria) ? '−' : '+' }}
                 </span>
               </button>
 
               <div
                 v-if="String(generoSeleccionado) === String(genero.idCategoria)"
-                class="ml-3 mt-2 space-y-1 border-l-2 border-[#ead8c3] pl-3"
+                class="ml-3 mt-1 space-y-1 border-l-2 border-[#ead8c3] py-1 pl-3"
               >
                 <button
                   type="button"
@@ -264,7 +311,7 @@
                   :class="categoriaSeleccionada === `genero:${genero.idCategoria}`
                     ? 'bg-[#f8f1e9] font-semibold text-[#a8733e]'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-[#a8733e]'"
-                  class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
+                  class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
                 >
                   Todas las categorías de {{ genero.nombre }}
                 </button>
@@ -277,18 +324,126 @@
                   :class="String(categoriaSeleccionada) === String(categoria.idCategoria)
                     ? 'bg-[#f8f1e9] font-semibold text-[#a8733e]'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-[#a8733e]'"
-                  class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
+                  class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
                 >
                   {{ categoria.nombre }}
                 </button>
               </div>
             </div>
           </div>
+          </section>
 
-          <div class="mt-6 border-t border-gray-200 pt-4">
-            <h4 class="mb-2 text-sm font-bold text-gray-500">Más opciones</h4>
-            <p class="text-sm text-gray-400">Próximamente</p>
-          </div>
+          <section v-show="seccionSidebar === 'direccion'" class="mt-5">
+            <div class="mb-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#a8733e]">Entrega</p>
+              <h3 class="mt-1 text-xl font-bold text-[#1a1a1a]">Mi dirección</h3>
+              <p class="mt-1 text-sm leading-5 text-gray-600">
+                Guarda la dirección de entrega asociada a tu cuenta.
+              </p>
+            </div>
+
+            <div v-if="!estaAutenticado" class="rounded-2xl border border-[#ead8c3] bg-white p-5 shadow-sm">
+              <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#f8f1e9] text-[#a8733e]">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 11V7a4 4 0 00-8 0v4m-1 0h18v10H3V11zm9 4v2" />
+                </svg>
+              </div>
+              <p class="font-semibold text-gray-900">Inicia sesión para continuar</p>
+              <p class="mt-1 text-sm leading-5 text-gray-600">
+                Tu dirección se guardará de forma privada en tu cuenta.
+              </p>
+              <button
+                type="button"
+                class="mt-4 w-full rounded-xl bg-[#1a1a1a] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#3b342e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574] focus-visible:ring-offset-2"
+                @click="irALogin"
+              >
+                Iniciar sesión
+              </button>
+            </div>
+
+            <template v-else>
+              <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p v-if="cargandoDireccion" class="py-2 text-sm text-gray-500" role="status">
+                  Cargando tu dirección...
+                </p>
+                <form v-else @submit.prevent="guardarDireccion">
+                  <label for="direccion-entrega" class="mb-2 block text-sm font-semibold text-gray-800">
+                    Dirección de entrega (obligatoria)
+                  </label>
+                  <textarea
+                    id="direccion-entrega"
+                    ref="direccionInput"
+                    v-model="direccion"
+                    name="direccion"
+                    autocomplete="street-address"
+                    maxlength="100"
+                    rows="3"
+                    required
+                    placeholder="Calle, número, colonia y referencias"
+                    class="w-full resize-y rounded-xl border border-gray-300 bg-[#fcfbf9] px-3 py-3 text-sm text-gray-900 outline-none transition focus:border-[#c89456] focus:ring-2 focus:ring-[#d4a574]/30"
+                    :aria-describedby="errorDireccion
+                      ? 'ayuda-direccion contador-direccion error-direccion'
+                      : 'ayuda-direccion contador-direccion'"
+                    :aria-invalid="direccionInvalida"
+                    @input="limpiarEstadoDireccion"
+                  ></textarea>
+                  <div class="mt-1 flex justify-between gap-3 text-xs text-gray-500">
+                    <span id="ayuda-direccion">Máximo 100 caracteres.</span>
+                    <span id="contador-direccion">{{ direccion.length }}/100</span>
+                  </div>
+
+                  <p v-if="errorDireccion" id="error-direccion" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+                    {{ errorDireccion }}
+                  </p>
+                  <p v-if="mensajeDireccion" class="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700" role="status">
+                    {{ mensajeDireccion }}
+                  </p>
+
+                  <button
+                    type="submit"
+                    :disabled="guardandoDireccion"
+                    class="mt-4 w-full rounded-xl bg-[#d4a574] px-4 py-3 text-sm font-bold text-[#1a1a1a] transition-colors hover:bg-[#c89456] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8733e] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {{ guardandoDireccion ? 'Guardando...' : 'Guardar dirección' }}
+                  </button>
+                </form>
+              </div>
+
+              <div class="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div class="p-4 pb-3">
+                  <h4 class="font-semibold text-gray-900">Referencia en el mapa</h4>
+                  <p class="mt-1 text-xs leading-5 text-gray-600">
+                    Mapa centrado en Culiacán, Sinaloa. Puedes moverlo y marcar un punto; esa marca es solo visual y no se guarda.
+                  </p>
+                </div>
+                <div
+                  ref="contenedorMapa"
+                  class="h-64 w-full bg-[#e8e5df]"
+                  role="region"
+                  aria-label="Mapa interactivo centrado en Culiacán, Sinaloa"
+                  tabindex="0"
+                ></div>
+                <div class="p-4 pt-3">
+                  <p v-if="coordenadasReferencia" class="text-xs text-gray-600" aria-live="polite">
+                    Punto de referencia: {{ coordenadasReferencia.lat }}, {{ coordenadasReferencia.lng }}
+                    <button
+                      type="button"
+                      class="ml-1 font-semibold text-[#8b5e34] underline underline-offset-2 hover:text-[#5c3c21]"
+                      @click="limpiarReferencia"
+                    >
+                      Quitar marca
+                    </button>
+                  </p>
+                  <p v-if="errorMapa" class="mt-2 text-xs text-amber-700" role="status">
+                    {{ errorMapa }}
+                  </p>
+                  <p class="mt-2 text-[11px] leading-4 text-gray-500">
+                    © OpenStreetMap contributors · Teselas sujetas a disponibilidad y política de uso.
+                  </p>
+                </div>
+              </div>
+            </template>
+          </section>
         </aside>
 
         <div
@@ -450,8 +605,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 const router = useRouter()
 
@@ -462,9 +619,27 @@ const busqueda = ref('')
 const categoriaSeleccionada = ref('todas')
 const generoSeleccionado = ref(null)
 const sidebarAbierta = ref(false)
+const seccionSidebar = ref('categorias')
+const sidebarTrigger = ref(null)
+const sidebarCloseButton = ref(null)
 const cargandoProductos = ref(true)
 const cargandoCategorias = ref(true)
 const errorCategorias = ref(false)
+const direccion = ref('')
+const direccionInput = ref(null)
+const cargandoDireccion = ref(false)
+const guardandoDireccion = ref(false)
+const direccionCargada = ref(false)
+const errorDireccion = ref('')
+const direccionInvalida = ref(false)
+const mensajeDireccion = ref('')
+const contenedorMapa = ref(null)
+const coordenadasReferencia = ref(null)
+const errorMapa = ref('')
+
+const centroCuliacan = [24.8091, -107.394]
+let mapaDireccion = null
+let marcadorDireccion = null
 
 const beneficios = [
   { icono: '↗', titulo: 'Envío Rápido', descripcion: 'Entrega en 2-3 días hábiles' },
@@ -506,6 +681,186 @@ const estaAutenticado = computed(() => {
     localStorage.getItem('usuario')
   )
 })
+
+const cerrarSidebar = () => {
+  sidebarAbierta.value = false
+  nextTick(() => sidebarTrigger.value?.focus())
+}
+
+const alternarSidebar = () => {
+  if (sidebarAbierta.value) {
+    cerrarSidebar()
+    return
+  }
+
+  sidebarAbierta.value = true
+  nextTick(() => sidebarCloseButton.value?.focus())
+}
+
+const abrirSeccionDireccion = () => {
+  seccionSidebar.value = 'direccion'
+  sidebarAbierta.value = true
+
+  if (estaAutenticado.value && !direccionCargada.value) {
+    cargarDireccion()
+  }
+}
+
+const cargarDireccion = async () => {
+  if (!estaAutenticado.value || cargandoDireccion.value || direccionCargada.value) {
+    return
+  }
+
+  cargandoDireccion.value = true
+  errorDireccion.value = ''
+
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/profile', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'No se pudo cargar tu dirección')
+    }
+
+    direccion.value = data.direccion || ''
+    direccionCargada.value = true
+  } catch (error) {
+    console.error('Error al cargar la dirección:', error)
+    errorDireccion.value = error.message || 'No se pudo cargar tu dirección'
+  } finally {
+    cargandoDireccion.value = false
+    direccionCargada.value = true
+  }
+}
+
+const limpiarEstadoDireccion = () => {
+  errorDireccion.value = ''
+  mensajeDireccion.value = ''
+  direccionInvalida.value = false
+}
+
+const guardarDireccion = async () => {
+  limpiarEstadoDireccion()
+
+  if (!direccion.value.trim()) {
+    errorDireccion.value = 'Escribe una dirección válida.'
+    direccionInvalida.value = true
+    direccionInput.value?.focus()
+    return
+  }
+
+  guardandoDireccion.value = true
+
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/profile/address', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ direccion: direccion.value })
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'No se pudo guardar tu dirección')
+    }
+
+    direccion.value = data.direccion
+    direccionCargada.value = true
+    mensajeDireccion.value = 'Tu dirección se guardó correctamente.'
+  } catch (error) {
+    console.error('Error al guardar la dirección:', error)
+    errorDireccion.value = error.message || 'No se pudo guardar tu dirección'
+  } finally {
+    guardandoDireccion.value = false
+  }
+}
+
+const limpiarReferencia = () => {
+  marcadorDireccion?.remove()
+  marcadorDireccion = null
+  coordenadasReferencia.value = null
+}
+
+const inicializarMapaDireccion = async () => {
+  if (!sidebarAbierta.value || seccionSidebar.value !== 'direccion' || !estaAutenticado.value) {
+    return
+  }
+
+  await nextTick()
+
+  if (
+    !sidebarAbierta.value ||
+    seccionSidebar.value !== 'direccion' ||
+    !estaAutenticado.value ||
+    !contenedorMapa.value
+  ) {
+    return
+  }
+
+  if (mapaDireccion) {
+    mapaDireccion.invalidateSize()
+    return
+  }
+
+  try {
+    mapaDireccion = L.map(contenedorMapa.value, { scrollWheelZoom: false })
+      .setView(centroCuliacan, 13)
+
+    const capa = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    })
+
+    capa.on('tileerror', () => {
+      errorMapa.value = 'No se pudieron cargar algunas partes del mapa. Revisa tu conexión.'
+    })
+    capa.on('load', () => {
+      errorMapa.value = ''
+    })
+    capa.addTo(mapaDireccion)
+
+    mapaDireccion.on('click', (evento) => {
+      const { lat, lng } = evento.latlng
+      coordenadasReferencia.value = {
+        lat: lat.toFixed(5),
+        lng: lng.toFixed(5)
+      }
+
+      if (!marcadorDireccion) {
+        marcadorDireccion = L.circleMarker(evento.latlng, {
+          radius: 8,
+          color: '#ffffff',
+          weight: 2,
+          fillColor: '#a8733e',
+          fillOpacity: 1
+        }).addTo(mapaDireccion)
+      } else {
+        marcadorDireccion.setLatLng(evento.latlng)
+      }
+    })
+  } catch (error) {
+    console.error('Error al inicializar el mapa:', error)
+    errorMapa.value = 'No se pudo inicializar el mapa.'
+    mapaDireccion?.remove()
+    mapaDireccion = null
+  }
+}
+
+watch(
+  [sidebarAbierta, seccionSidebar],
+  ([abierta, seccion]) => {
+    if (abierta && seccion === 'direccion') {
+      inicializarMapaDireccion()
+    }
+  },
+  { flush: 'post' }
+)
 
 const subcategoriasDe = (idCategoriaRaiz) => {
   return categorias.value.filter(
@@ -793,5 +1148,10 @@ onMounted(() => {
 
   obtenerProductos()
   obtenerCategorias()
+})
+
+onBeforeUnmount(() => {
+  mapaDireccion?.remove()
+  mapaDireccion = null
 })
 </script>

@@ -181,3 +181,65 @@ export const iniciarSesion = async (req, res) => {
     return res.status(500).json({ message: 'Error interno al iniciar sesión' });
   }
 };
+
+export const obtenerPerfilUsuario = async (req, res) => {
+  try {
+    const idUsuario = Number(req.usuario?.idUsuario);
+    if (!Number.isInteger(idUsuario) || idUsuario <= 0) {
+      return res.status(401).json({ message: 'Sesión no válida' });
+    }
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { idUsuario },
+      select: {
+        direccion: true
+      }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    return res.json(usuario);
+  } catch (error) {
+    console.error('Error obteniendo el perfil:', error);
+    return res.status(500).json({ message: 'No se pudo cargar el perfil' });
+  }
+};
+
+export const actualizarDireccionUsuario = async (req, res) => {
+  try {
+    const idUsuario = Number(req.usuario?.idUsuario);
+    const direccion = req.body?.direccion;
+
+    if (!Number.isInteger(idUsuario) || idUsuario <= 0) {
+      return res.status(401).json({ message: 'Sesión no válida' });
+    }
+
+    if (typeof direccion !== 'string' || !direccion.trim()) {
+      return res.status(400).json({ message: 'La dirección es obligatoria' });
+    }
+
+    const direccionNormalizada = direccion.trim();
+    if (direccionNormalizada.length > 100) {
+      return res.status(400).json({ message: 'La dirección no puede exceder 100 caracteres' });
+    }
+
+    const usuario = await prisma.usuario.update({
+      where: { idUsuario },
+      data: { direccion: direccionNormalizada },
+      select: {
+        direccion: true
+      }
+    });
+
+    return res.json(usuario);
+  } catch (error) {
+    if (error?.code === 'P2025') {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    console.error('Error actualizando la dirección:', error);
+    return res.status(500).json({ message: 'No se pudo guardar la dirección' });
+  }
+};
