@@ -68,6 +68,19 @@
         </button>
 
         <button
+          @click="seccionActiva = 'facturas'"
+          :class="[
+            'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
+            seccionActiva === 'facturas'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+          ]"
+        >
+          <i class="pi pi-file-pdf text-base"></i>
+          <span class="font-medium">Facturas</span>
+        </button>
+
+        <button
           @click="seccionActiva = 'categorias'"
           :class="[
             'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
@@ -704,6 +717,94 @@
           </Card>
         </div>
 
+        <!-- Facturas -->
+        <div v-if="seccionActiva === 'facturas'">
+          <div class="mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Facturas</h1>
+            <p class="text-slate-400">Consulta y descarga las facturas de los pedidos</p>
+          </div>
+
+          <Card>
+            <template #content>
+              <p v-if="errorPedidos" role="alert" class="mb-4 text-sm text-red-400">
+                {{ errorPedidos }}
+                <Button label="Reintentar" size="small" class="ml-2" @click="cargarPedidos" />
+              </p>
+              <div role="region" aria-label="Listado de facturas" tabindex="0" class="overflow-x-auto">
+                <DataTable
+                  :value="facturas"
+                  :loading="cargandoPedidos"
+                  tableStyle="min-width: 100%"
+                  paginator
+                  :rows="10"
+                  responsiveLayout="scroll"
+                >
+                  <template #empty>
+                    {{ errorPedidos ? 'No se pudieron cargar las facturas.' : 'No hay facturas registradas.' }}
+                  </template>
+                  <Column field="idFactura" header="Factura">
+                    <template #body="slotProps">
+                      <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                        #{{ String(slotProps.data.idFactura).padStart(6, '0') }}
+                      </span>
+                    </template>
+                  </Column>
+                  <Column field="pedido.idPedido" header="Pedido">
+                    <template #body="slotProps">
+                      #{{ slotProps.data.pedido.idPedido }}
+                    </template>
+                  </Column>
+                  <Column field="pedido.usuario.nombre" header="Cliente">
+                    <template #body="slotProps">
+                      <div>
+                        <p>{{ slotProps.data.pedido.usuario?.nombre || 'N/A' }}</p>
+                        <p class="text-xs text-slate-400">
+                          {{ slotProps.data.pedido.usuario?.correo || '' }}
+                        </p>
+                      </div>
+                    </template>
+                  </Column>
+                  <Column field="fechaCreacion" header="Fecha">
+                    <template #body="slotProps">
+                      {{ formatDate(slotProps.data.fechaCreacion) }}
+                    </template>
+                  </Column>
+                  <Column field="pedido.total" header="Total">
+                    <template #body="slotProps">
+                      <span class="text-green-400 font-semibold">
+                        ${{ formatPrice(slotProps.data.pedido.total) }}
+                      </span>
+                    </template>
+                  </Column>
+                  <Column header="Acciones">
+                    <template #body="slotProps">
+                      <div class="flex flex-wrap gap-2">
+                        <Button
+                          :label="facturaEnProceso?.idFactura === slotProps.data.idFactura && facturaEnProceso.accion === 'ver' ? 'Abriendo...' : 'Ver factura'"
+                          :aria-label="`Ver factura ${String(slotProps.data.idFactura).padStart(6, '0')}`"
+                          icon="pi pi-eye"
+                          size="small"
+                          :disabled="facturaEnProceso !== null"
+                          @click="gestionarFactura(slotProps.data, 'ver')"
+                        />
+                        <Button
+                          :label="facturaEnProceso?.idFactura === slotProps.data.idFactura && facturaEnProceso.accion === 'descargar' ? 'Descargando...' : 'Descargar'"
+                          :aria-label="`Descargar factura ${String(slotProps.data.idFactura).padStart(6, '0')}`"
+                          icon="pi pi-download"
+                          size="small"
+                          severity="secondary"
+                          :disabled="facturaEnProceso !== null"
+                          @click="gestionarFactura(slotProps.data, 'descargar')"
+                        />
+                      </div>
+                    </template>
+                  </Column>
+                </DataTable>
+              </div>
+            </template>
+          </Card>
+        </div>
+
         <!-- Categorías -->
         <div v-if="seccionActiva === 'categorias'">
           <div class="flex justify-between items-center mb-8">
@@ -875,6 +976,11 @@ const tallasSeleccionadas = ref([])
 const stockPorTalla = ref({})
 const pedidosRecientes = ref([])
 const roles = ref([])
+const facturaEnProceso = ref(null)
+
+const facturas = computed(() => pedidos.value.flatMap((pedido) =>
+  (pedido.facturas || []).map((factura) => ({ ...factura, pedido }))
+))
 
 const mostrarFormNuevoProducto = ref(false)
 const mostrarFormNuevaCategoria = ref(false)
@@ -1073,6 +1179,65 @@ const cargarPedidos = async () => {
     })
   } finally {
     cargandoPedidos.value = false
+  }
+}
+
+const gestionarFactura = async (factura, accion) => {
+  const ventana = accion === 'ver' ? window.open('', '_blank') : null
+  if (accion === 'ver' && !ventana) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Ventana bloqueada',
+      detail: 'Permite las ventanas emergentes para abrir la factura.',
+      life: 3500
+    })
+    return
+  }
+
+  if (ventana) {
+    ventana.opener = null
+    ventana.document.title = `Factura ${factura.idFactura}`
+    ventana.document.body.textContent = 'Cargando factura...'
+  }
+
+  facturaEnProceso.value = { idFactura: factura.idFactura, accion }
+
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch(
+      `http://localhost:3000/api/payments/invoice/${factura.pedido.idPedido}?download=${accion === 'descargar'}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    )
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      throw new Error(error.message || 'No se pudo obtener la factura.')
+    }
+
+    const url = URL.createObjectURL(await res.blob())
+    if (ventana) {
+      ventana.location.href = url
+    } else {
+      const enlace = document.createElement('a')
+      enlace.href = url
+      enlace.download = `factura-${String(factura.idFactura).padStart(6, '0')}.pdf`
+      document.body.append(enlace)
+      enlace.click()
+      enlace.remove()
+    }
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } catch (error) {
+    ventana?.close()
+    console.error('Error obteniendo factura:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error con la factura',
+      detail: error.message || 'No se pudo obtener la factura.',
+      life: 3500
+    })
+  } finally {
+    facturaEnProceso.value = null
   }
 }
 

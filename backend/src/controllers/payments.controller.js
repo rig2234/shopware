@@ -392,11 +392,13 @@ export const downloadInvoice = async (req, res) => {
       return res.status(400).json({ message: 'Pedido no válido' })
     }
 
+    const where = { idPedido }
+    if (req.usuario.idRol !== 2) {
+      where.idUsuario = req.usuario.idUsuario
+    }
+
     const pedido = await prisma.pedido.findFirst({
-      where: {
-        idPedido,
-        idUsuario: req.usuario.idUsuario
-      },
+      where,
       include: { facturas: true }
     })
 
@@ -424,9 +426,11 @@ export const downloadInvoice = async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/pdf')
+    const disposicion = req.query.download === 'true' ? 'attachment' : 'inline'
+    const nombreDescarga = `factura-${String(factura.idFactura).padStart(6, '0')}.pdf`
     res.setHeader(
       'Content-Disposition',
-      `inline; filename=factura-${String(factura.idFactura).padStart(6, '0')}.pdf`
+      `${disposicion}; filename=${nombreDescarga}`
     )
     return res.sendFile(rutaFinal)
   } catch (error) {

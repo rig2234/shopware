@@ -33,7 +33,8 @@ export const getAllOrders = async (req, res) => {
         },
         facturas: {
           select: {
-            idFactura: true
+            idFactura: true,
+            fechaCreacion: true
           }
         }
       },
