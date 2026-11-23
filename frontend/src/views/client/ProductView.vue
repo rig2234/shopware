@@ -1,130 +1,202 @@
 <template>
-  <main class="min-h-screen bg-[#f8f8f8] px-6 py-10 text-[#333]">
-    <div class="mx-auto max-w-6xl">
-      <div class="mb-8 flex items-center justify-between">
-        <router-link to="/tienda" class="text-[#a8733e] hover:underline">
-          ← Volver a la tienda
-        </router-link>
+  <main class="min-h-screen bg-[#f7f5f2] px-4 py-6 text-[#292521] sm:px-6 sm:py-10">
+    <div class="mx-auto max-w-7xl">
+      <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <nav aria-label="Ruta de navegación">
+          <ol class="flex flex-wrap items-center gap-2 text-sm">
+            <li>
+              <router-link to="/tienda" class="text-[#8b6847] transition-colors hover:text-[#292521]">
+                Tienda
+              </router-link>
+            </li>
+            <li aria-hidden="true" class="text-gray-400">/</li>
+            <li aria-current="page" class="max-w-[14rem] truncate font-medium">
+              {{ producto?.nombre || 'Producto' }}
+            </li>
+          </ol>
+        </nav>
 
         <button
           type="button"
-          class="rounded-lg border border-gray-300 bg-white px-4 py-2 hover:border-[#d4a574]"
+          class="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d9d2c8] bg-white px-5 text-sm font-semibold text-[#292521] shadow-sm transition hover:border-[#a8733e] hover:text-[#8b6847] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e]"
           @click="irACarrito"
         >
+          <i class="pi pi-shopping-bag" aria-hidden="true"></i>
           Ver carrito
         </button>
-      </div>
-
-      <p v-if="cargando" class="rounded-xl bg-white p-8 text-gray-500">
-        Cargando producto...
-      </p>
-
-      <p v-else-if="error" class="rounded-xl bg-white p-8 text-red-600">
-        {{ error }}
-      </p>
+      </header>
 
       <section
-        v-else-if="producto"
-        class="grid gap-8 rounded-2xl bg-white p-6 shadow-sm md:grid-cols-2 md:p-10"
+        v-if="cargando"
+        aria-live="polite"
+        class="grid min-h-[28rem] place-items-center rounded-[2rem] border border-[#eee7de] bg-white shadow-sm"
       >
-        <div class="overflow-hidden rounded-xl bg-gray-100">
-          <img
-            :src="urlImagen(producto.imagen)"
-            :alt="producto.nombre || 'Producto Shopware'"
-            class="h-full max-h-[600px] min-h-80 w-full object-cover"
-          />
+        <div class="text-center">
+          <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#eadfce] border-t-[#a8733e] motion-reduce:animate-none"></div>
+          <p class="font-medium text-gray-500">Cargando producto...</p>
         </div>
+      </section>
 
-        <div class="flex flex-col">
-          <p class="mb-2 text-sm text-gray-500">
-            {{ producto.categoria?.nombre || 'Producto Shopware' }}
-          </p>
+      <section
+        v-else-if="error"
+        class="rounded-[2rem] border border-red-100 bg-white px-6 py-16 text-center shadow-sm"
+      >
+        <i class="pi pi-exclamation-circle mb-4 text-4xl text-red-500" aria-hidden="true"></i>
+        <p role="alert" class="text-lg font-semibold text-red-700">{{ error }}</p>
+        <button
+          type="button"
+          class="mt-6 rounded-full bg-[#292521] px-6 py-3 font-semibold text-white transition hover:bg-[#a8733e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e]"
+          @click="cargarProducto"
+        >
+          Intentar de nuevo
+        </button>
+      </section>
 
-          <h1 class="mb-4 text-3xl font-bold text-[#1a1a1a]">
-            {{ producto.nombre }}
-          </h1>
-
-          <div class="mb-8">
-            <p class="text-3xl font-bold text-[#d4a574]">
-              ${{ formatPrice(precioFinal) }}
-            </p>
-            <p
+      <section v-else-if="producto" class="@container">
+        <div class="grid grid-cols-1 items-center gap-8 rounded-[2rem] border border-[#eee7de] bg-white p-4 shadow-[0_24px_70px_-48px_rgba(54,39,22,0.45)] sm:gap-12 sm:p-8 @4xl:grid-cols-2 @4xl:gap-16 lg:p-12">
+          <div class="relative aspect-[4/5] max-h-[720px] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#f0e9df] via-[#f7f4ef] to-[#e9dfd2]">
+            <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#d4a574]/20 blur-3xl" aria-hidden="true"></div>
+            <div class="absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-white/70 blur-3xl" aria-hidden="true"></div>
+            <img
+              :src="urlImagen(producto.imagen)"
+              :alt="producto.nombre || 'Producto Shopware'"
+              class="relative z-10 h-full w-full object-contain p-6 sm:p-10"
+            />
+            <span
               v-if="Number(producto.descuento) > 0"
-              class="text-gray-400 line-through"
+              class="absolute left-5 top-5 z-20 rounded-full bg-[#292521] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-lg"
             >
-              ${{ formatPrice(producto.precio) }}
-            </p>
+              -{{ Number(producto.descuento) }}%
+            </span>
           </div>
 
-          <fieldset class="mb-6">
-            <legend class="mb-3 font-semibold">Selecciona una talla</legend>
+          <div class="flex flex-col py-2 sm:py-4">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-[#a8733e]">
+              {{ producto.categoria?.nombre || 'Shopware' }}
+            </p>
 
-            <div v-if="tallas.length" class="flex flex-wrap gap-3">
-              <button
-                v-for="item in tallas"
-                :key="item.idProductoTalla"
-                type="button"
-                :disabled="Number(item.stock) <= 0"
-                :aria-pressed="tallaSeleccionada === item.idProductoTalla"
-                :class="[
-                  tallaSeleccionada === item.idProductoTalla
-                    ? 'border-[#d4a574] bg-[#d4a574] text-white'
-                    : 'border-gray-300 bg-white text-gray-800',
-                  Number(item.stock) <= 0
-                    ? 'cursor-not-allowed opacity-40'
-                    : 'hover:border-[#d4a574]'
-                ]"
-                class="min-w-14 rounded-lg border-2 px-4 py-3 font-semibold"
-                @click="seleccionarTalla(item)"
+            <h1 class="text-3xl font-semibold leading-tight tracking-tight text-[#292521] sm:text-4xl lg:text-5xl">
+              {{ producto.nombre }}
+            </h1>
+
+            <div class="my-7 flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-[#eee7de] pb-7">
+              <p class="text-4xl font-semibold tracking-tight text-[#a8733e]">
+                ${{ formatPrice(precioFinal) }}
+              </p>
+              <p
+                v-if="Number(producto.descuento) > 0"
+                class="pb-1 text-lg text-gray-400 line-through"
               >
-                {{ item.talla?.nombre || 'Talla' }}
-              </button>
+                ${{ formatPrice(producto.precio) }}
+              </p>
+              <span
+                v-if="Number(producto.descuento) > 0"
+                class="mb-1 rounded-full bg-[#f7eee2] px-3 py-1 text-xs font-semibold text-[#8b6847]"
+              >
+                Ahorras ${{ formatPrice(Number(producto.precio) - precioFinal) }}
+              </span>
             </div>
 
-            <p v-else class="text-sm text-red-600">
-              No hay tallas disponibles para este producto.
-            </p>
+            <div class="mb-3 flex flex-wrap items-center gap-2 text-sm">
+              <span
+                class="h-2.5 w-2.5 rounded-full"
+                :class="tallasDisponibles ? 'bg-emerald-500' : 'bg-red-500'"
+                aria-hidden="true"
+              ></span>
+              <p v-if="tallas.length && tallasDisponibles" role="status" class="font-medium text-gray-700">
+                Disponible en {{ tallasDisponibles }} {{ tallasDisponibles === 1 ? 'talla' : 'tallas' }}
+              </p>
+              <p v-else-if="tallas.length" role="status" class="font-medium text-red-700">
+                Producto agotado en todas las tallas
+              </p>
+              <p v-else role="status" class="font-medium text-gray-500">
+                No hay tallas configuradas
+              </p>
+            </div>
+
+            <fieldset class="mb-7">
+              <legend class="mb-3 text-sm font-semibold text-[#292521]">
+                Selecciona una talla
+              </legend>
+
+              <div v-if="tallas.length" class="flex flex-wrap gap-3">
+                <button
+                  v-for="item in tallas"
+                  :key="item.idProductoTalla"
+                  type="button"
+                  :disabled="getStock(item) === 0"
+                  :aria-label="`Talla ${item.talla?.nombre || 'sin nombre'}${getStock(item) === 0 ? ', agotada' : ''}`"
+                  :aria-pressed="tallaSeleccionada === item.idProductoTalla"
+                  :class="[
+                    tallaSeleccionada === item.idProductoTalla
+                      ? 'border-[#a8733e] bg-[#a8733e] text-white shadow-md shadow-[#a8733e]/20'
+                      : 'border-[#ded8cf] bg-white text-[#292521]',
+                    getStock(item) === 0
+                      ? 'cursor-not-allowed border-dashed bg-[#f4f1ed] text-gray-500'
+                      : 'transition hover:border-[#a8733e] hover:bg-[#fbf8f4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e]'
+                  ]"
+                  class="flex min-h-16 min-w-16 flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-4 py-2 font-semibold"
+                  @click="seleccionarTalla(item)"
+                >
+                  <span>{{ item.talla?.nombre || 'Talla' }}</span>
+                  <span v-if="getStock(item) === 0" class="text-[0.65rem] font-medium uppercase tracking-wide">
+                    Agotada
+                  </span>
+                </button>
+              </div>
+
+              <p v-else class="text-sm text-gray-500">
+                No hay tallas disponibles para este producto.
+              </p>
+            </fieldset>
+
+            <div
+              v-if="tallaActual && getStock(tallaActual) > 0"
+              class="mb-7 flex flex-wrap items-end justify-between gap-4 rounded-2xl bg-[#f8f6f2] p-4"
+            >
+              <div>
+                <label for="cantidad" class="mb-2 block text-sm font-semibold">
+                  Cantidad
+                </label>
+                <select
+                  id="cantidad"
+                  v-model.number="cantidad"
+                  class="min-h-11 w-24 rounded-xl border border-[#d9d2c8] bg-white px-3 py-2 focus:border-[#a8733e] focus:outline-none focus:ring-2 focus:ring-[#a8733e]/20"
+                >
+                  <option
+                    v-for="opcion in opcionesCantidad"
+                    :key="opcion"
+                    :value="opcion"
+                  >
+                    {{ opcion }}
+                  </option>
+                </select>
+              </div>
+              <p class="pb-2 text-sm text-gray-500">
+                {{ getStock(tallaActual) }} disponibles en talla {{ tallaActual.talla?.nombre || 'seleccionada' }}
+              </p>
+            </div>
 
             <p
-              v-if="tallaActual && Number(tallaActual.stock) <= 0"
-              class="mt-2 text-sm text-red-600"
+              v-if="mensaje"
+              role="status"
+              aria-live="polite"
+              class="mb-4 rounded-xl px-4 py-3 text-sm font-medium"
+              :class="errorAgregar ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'"
             >
-              Talla agotada.
+              {{ mensaje }}
             </p>
-          </fieldset>
 
-          <div v-if="tallaActual && Number(tallaActual.stock) > 0" class="mb-6">
-  <label for="cantidad" class="mb-2 block font-semibold">
-    Cantidad disponible: {{ tallaActual.stock }}
-  </label>
-
-  <select
-    id="cantidad"
-    v-model.number="cantidad"
-    class="w-24 rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-[#d4a574] focus:outline-none"
-  >
-    <option
-      v-for="opcion in opcionesCantidad"
-      :key="opcion"
-      :value="opcion"
-    >
-      {{ opcion }}
-    </option>
-  </select>
-</div>
-
-          <p v-if="mensaje" class="mb-4 text-sm" :class="errorAgregar ? 'text-red-600' : 'text-green-700'">
-            {{ mensaje }}
-          </p>
-
-          <button
-            type="button"
-            class="mt-auto rounded-lg bg-[#1a1a1a] px-6 py-3 font-bold text-white transition-colors hover:bg-[#d4a574] hover:text-[#1a1a1a] disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="!tallaSeleccionada || Number(tallaActual?.stock) <= 0 || agregando"
-            @click="agregarAlCarrito"
-          >
-            {{ agregando ? 'Agregando...' : 'Agregar al carrito' }}
-          </button>
+            <button
+              type="button"
+              class="mt-auto inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[#292521] px-6 py-4 font-semibold text-white shadow-lg shadow-[#292521]/10 transition hover:bg-[#a8733e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none"
+              :disabled="!tallaActual || getStock(tallaActual) === 0 || agregando"
+              @click="agregarAlCarrito"
+            >
+              <i v-if="!agregando && tallaActual" class="pi pi-shopping-bag" aria-hidden="true"></i>
+              {{ agregando ? 'Agregando...' : (productoAgotado ? 'Producto agotado' : (tallaActual ? 'Agregar al carrito' : 'Selecciona una talla')) }}
+            </button>
+          </div>
         </div>
       </section>
     </div>
@@ -140,12 +212,26 @@ const router = useRouter()
 
 const producto = ref(null)
 const cargando = ref(true)
+const error = ref('')
 const agregando = ref(false)
 const tallaSeleccionada = ref(null)
 const mensaje = ref('')
 const errorAgregar = ref(false)
 
 const tallas = computed(() => producto.value?.tallas || [])
+
+const getStock = (item) => {
+  const stock = Number(item?.stock)
+  return Number.isFinite(stock) ? Math.max(0, stock) : 0
+}
+
+const tallasDisponibles = computed(() =>
+  tallas.value.filter((item) => getStock(item) > 0).length
+)
+
+const productoAgotado = computed(() =>
+  tallas.value.length > 0 && tallasDisponibles.value === 0
+)
 
 const tallaActual = computed(() =>
   tallas.value.find(
@@ -176,6 +262,8 @@ const cargarProducto = async () => {
   cargando.value = true
   producto.value = null
   tallaSeleccionada.value = null
+  mensaje.value = ''
+  error.value = ''
 
   try {
     const response = await fetch(
@@ -188,8 +276,8 @@ const cargarProducto = async () => {
     }
 
     producto.value = data
-  } catch (error) {
-    mensaje.value = error.message
+  } catch (err) {
+    error.value = err.message
   } finally {
     cargando.value = false
   }
@@ -198,19 +286,21 @@ const cargarProducto = async () => {
 const cantidad = ref(1)
 
 const opcionesCantidad = computed(() => {
-  const stock = Number(tallaActual.value?.stock || 0)
+  const stock = getStock(tallaActual.value)
   const maximo = Math.min(stock, 99)
 
   return Array.from({ length: maximo }, (_, indice) => indice + 1)
 })
 
 const seleccionarTalla = (item) => {
+  if (getStock(item) <= 0) return
+
   tallaSeleccionada.value = item.idProductoTalla
   cantidad.value = 1
 }
 
 const agregarAlCarrito = async () => {
-  if (!tallaSeleccionada.value) {
+  if (!tallaActual.value || getStock(tallaActual.value) <= 0) {
     errorAgregar.value = true
     mensaje.value = 'Selecciona una talla disponible.'
     return
