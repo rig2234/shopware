@@ -185,6 +185,66 @@
             </span>
           </div>
 
+          <div class="@container grid grid-cols-1 @4xl:grid-cols-2 gap-6 mb-8">
+            <Card class="bg-slate-800 border-slate-700">
+              <template #title>
+                <span class="text-white">Ventas de los últimos 6 meses</span>
+              </template>
+              <template #content>
+                <p class="mb-4 text-sm text-slate-400">Importe mensual en MXN</p>
+                <ol v-if="hayVentasMensuales" class="space-y-4">
+                  <li
+                    v-for="mes in ventasMensuales"
+                    :key="mes.clave"
+                    class="grid grid-cols-[4.5rem_minmax(0,1fr)_5.5rem] items-center gap-3"
+                  >
+                    <span class="text-sm text-slate-300">{{ mes.etiqueta }}</span>
+                    <div class="h-6 overflow-hidden rounded bg-slate-700" aria-hidden="true">
+                      <div
+                        class="h-full rounded bg-gradient-to-r from-emerald-600 to-emerald-400"
+                        :style="{ width: mes.ancho }"
+                      ></div>
+                    </div>
+                    <span class="text-right text-sm font-medium text-white">
+                      ${{ formatPrice(mes.total) }}
+                    </span>
+                  </li>
+                </ol>
+                <p v-else class="py-8 text-center text-slate-400">
+                  Sin ventas en los últimos 6 meses.
+                </p>
+              </template>
+            </Card>
+
+            <Card class="bg-slate-800 border-slate-700">
+              <template #title>
+                <span class="text-white">Productos más vendidos</span>
+              </template>
+              <template #content>
+                <p class="mb-4 text-sm text-slate-400">Unidades vendidas, según los pedidos</p>
+                <ol v-if="productosMasVendidos.length" class="space-y-4">
+                  <li v-for="producto in productosMasVendidos" :key="producto.nombre">
+                    <div class="mb-1 flex justify-between gap-3 text-sm">
+                      <span class="break-words text-slate-200">{{ producto.nombre }}</span>
+                      <span class="shrink-0 font-medium text-white">
+                        {{ producto.cantidad }} {{ producto.cantidad === 1 ? 'unidad' : 'unidades' }}
+                      </span>
+                    </div>
+                    <div class="h-4 overflow-hidden rounded bg-slate-700" aria-hidden="true">
+                      <div
+                        class="h-full rounded bg-gradient-to-r from-sky-600 to-sky-400"
+                        :style="{ width: producto.ancho }"
+                      ></div>
+                    </div>
+                  </li>
+                </ol>
+                <p v-else class="py-8 text-center text-slate-400">
+                  Aún no hay unidades vendidas.
+                </p>
+              </template>
+            </Card>
+          </div>
+
           <Card class="bg-slate-800 border-slate-700 overflow-hidden">
             <template #title>
               <span class="text-white">Pedidos Recientes</span>
@@ -1069,6 +1129,75 @@ const formatDate = (date) => {
     minute: '2-digit'
   })
 }
+
+const withRelativeBarWidth = (items, valueKey) => {
+  const maxValue = Math.max(...items.map((item) => item[valueKey]), 0)
+  return items.map((item) => ({
+    ...item,
+    ancho: maxValue ? `${(item[valueKey] / maxValue) * 100}%` : '0%'
+  }))
+}
+
+const ventasMensuales = computed(() => {
+  const inicioMes = new Date()
+  inicioMes.setDate(1)
+  inicioMes.setHours(0, 0, 0, 0)
+
+  const meses = Array.from({ length: 6 }, (_, index) => {
+    const fecha = new Date(inicioMes)
+    fecha.setMonth(inicioMes.getMonth() - 5 + index)
+    const clave = `${fecha.getFullYear()}-${fecha.getMonth()}`
+
+    return {
+      clave,
+      etiqueta: fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }),
+      total: 0
+    }
+  })
+  const totalesPorMes = new Map(meses.map((mes) => [mes.clave, 0]))
+
+  for (const pedido of pedidos.value) {
+    if (!pedido.fechaPedido) continue
+
+    const fecha = new Date(pedido.fechaPedido)
+    if (Number.isNaN(fecha.getTime())) continue
+
+    const clave = `${fecha.getFullYear()}-${fecha.getMonth()}`
+    if (totalesPorMes.has(clave)) {
+      totalesPorMes.set(clave, totalesPorMes.get(clave) + Number(pedido.total || 0))
+    }
+  }
+
+  return withRelativeBarWidth(
+    meses.map((mes) => ({ ...mes, total: totalesPorMes.get(mes.clave) || 0 })),
+    'total'
+  )
+})
+
+const hayVentasMensuales = computed(() =>
+  ventasMensuales.value.some((mes) => mes.total > 0)
+)
+
+const productosMasVendidos = computed(() => {
+  const cantidades = new Map()
+
+  for (const pedido of pedidos.value) {
+    for (const detalle of pedido.detalles || []) {
+      const nombre = detalle.producto?.nombre || 'Producto'
+      const cantidad = Number(detalle.cantidad || 0)
+      if (cantidad > 0) {
+        cantidades.set(nombre, (cantidades.get(nombre) || 0) + cantidad)
+      }
+    }
+  }
+
+  const productos = [...cantidades.entries()]
+    .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+    .sort((a, b) => b.cantidad - a.cantidad || a.nombre.localeCompare(b.nombre, 'es'))
+    .slice(0, 5)
+
+  return withRelativeBarWidth(productos, 'cantidad')
+})
 
 const getImageUrl = (image) => {
   if (!image) return 'https://placehold.co/120x120/1f2937/f8fafc?text=No+Image'
