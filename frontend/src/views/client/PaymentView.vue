@@ -55,9 +55,18 @@
           Número de pedido: {{ idPedido }}
         </p>
 
+        <button
+          v-if="idPedido"
+          type="button"
+          class="mt-6 inline-flex rounded-xl border border-[#292521] px-6 py-3 font-bold text-[#292521]"
+          @click="descargarFactura"
+        >
+          Descargar factura PDF
+        </button>
+
         <router-link
           to="/tienda"
-          class="mt-6 inline-flex rounded-xl bg-[#292521] px-6 py-3 font-semibold text-white"
+          class="mt-4 inline-flex rounded-xl bg-[#292521] px-6 py-3 font-semibold text-white"
         >
           Volver a la tienda
         </router-link>
@@ -352,6 +361,31 @@ const confirmarPedido = async () => {
   idPedido.value = datos.idPedido
   pagoCompletado.value = true
   confirmarPendiente.value = false
+}
+
+const descargarFactura = async () => {
+  const token = localStorage.getItem('token')
+  const respuesta = await fetch(
+    `${API_URL}/api/payments/invoice/${idPedido.value}`,
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+  )
+
+  if (!respuesta.ok) {
+    mensajeError.value = 'No se pudo descargar la factura'
+    return
+  }
+
+  const blob = await respuesta.blob()
+  const url = URL.createObjectURL(blob)
+  const enlace = document.createElement('a')
+  enlace.href = url
+  enlace.download = `factura-${String(idPedido.value).padStart(6, '0')}.pdf`
+  document.body.appendChild(enlace)
+  enlace.click()
+  enlace.remove()
+  URL.revokeObjectURL(url)
 }
 
 const pagar = async () => {

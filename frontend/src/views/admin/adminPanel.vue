@@ -178,7 +178,15 @@
             </template>
 
             <template #content>
-              <DataTable :value="pedidosRecientes" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+              <div role="region" aria-label="Pedidos recientes" tabindex="0" class="overflow-x-auto">
+                <DataTable
+                  :value="pedidosRecientes"
+                  :loading="cargandoPedidos"
+                  tableStyle="min-width: 100%"
+                  paginator
+                  :rows="10"
+                  responsiveLayout="scroll"
+                >
                 <Column field="idPedido" header="ID Pedido">
                   <template #body="slotProps">
                     <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
@@ -189,7 +197,10 @@
 
                 <Column field="usuario" header="Cliente">
                   <template #body="slotProps">
-                    {{ slotProps.data.usuario?.nombre || 'N/A' }}
+                    <div>
+                      <p>{{ slotProps.data.usuario?.nombre || 'N/A' }}</p>
+                      <p class="text-xs text-slate-400">{{ slotProps.data.usuario?.correo || '' }}</p>
+                    </div>
                   </template>
                 </Column>
 
@@ -206,7 +217,8 @@
                     </span>
                   </template>
                 </Column>
-              </DataTable>
+                </DataTable>
+              </div>
             </template>
           </Card>
         </div>
@@ -613,7 +625,22 @@
 
           <Card>
             <template #content>
-              <DataTable :value="pedidos" tableStyle="min-width: 100%" paginator :rows="10" responsiveLayout="scroll">
+              <p v-if="errorPedidos" role="alert" class="mb-4 text-sm text-red-400">
+                {{ errorPedidos }}
+                <Button label="Reintentar" size="small" class="ml-2" @click="cargarPedidos" />
+              </p>
+              <div role="region" aria-label="Listado de pedidos" tabindex="0" class="overflow-x-auto">
+                <DataTable
+                  :value="pedidos"
+                  :loading="cargandoPedidos"
+                  tableStyle="min-width: 100%"
+                  paginator
+                  :rows="10"
+                  responsiveLayout="scroll"
+                >
+                <template #empty>
+                  {{ errorPedidos ? 'No se pudieron cargar los pedidos.' : 'No hay pedidos registrados.' }}
+                </template>
                 <Column field="idPedido" header="ID Pedido">
                   <template #body="slotProps">
                     <span class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
@@ -624,7 +651,10 @@
 
                 <Column field="usuario" header="Cliente">
                   <template #body="slotProps">
-                    {{ slotProps.data.usuario?.nombre || 'N/A' }}
+                    <div>
+                      <p>{{ slotProps.data.usuario?.nombre || 'N/A' }}</p>
+                      <p class="text-xs text-slate-400">{{ slotProps.data.usuario?.correo || '' }}</p>
+                    </div>
                   </template>
                 </Column>
 
@@ -644,10 +674,32 @@
 
                 <Column field="detalles" header="Artículos">
                   <template #body="slotProps">
-                    {{ slotProps.data.detalles?.length || 0 }}
+                    <ul v-if="slotProps.data.detalles?.length" class="space-y-1">
+                      <li
+                        v-for="detalle in slotProps.data.detalles"
+                        :key="`${detalle.idProducto}-${detalle.idProductoTalla}`"
+                        class="text-sm"
+                      >
+                        {{ detalle.producto?.nombre || 'Producto' }}
+                        <span class="text-slate-400">
+                          ({{ detalle.productoTalla?.talla?.nombre || 'Sin talla' }})
+                          · {{ detalle.cantidad || 0 }} × ${{ formatPrice(detalle.precioUnitario) }}
+                        </span>
+                      </li>
+                    </ul>
+                    <span v-else class="text-slate-400">Sin artículos</span>
+                  </template>
+                </Column>
+                <Column field="facturas" header="Factura">
+                  <template #body="slotProps">
+                    <span v-if="slotProps.data.facturas?.[0]?.idFactura">
+                      #{{ slotProps.data.facturas[0].idFactura }}
+                    </span>
+                    <span v-else>N/A</span>
                   </template>
                 </Column>
               </DataTable>
+              </div>
             </template>
           </Card>
         </div>
@@ -815,6 +867,8 @@ const usuario = ref(null)
 const productos = ref([])
 const usuarios = ref([])
 const pedidos = ref([])
+const cargandoPedidos = ref(false)
+const errorPedidos = ref('')
 const categorias = ref([])
 const tallas = ref([])
 const tallasSeleccionadas = ref([])
@@ -969,9 +1023,7 @@ const cargarDatos = async () => {
       console.error('Error cargando roles:', error)
     }
 
-    // Estos valores siguen siendo de ejemplo hasta conectar sus endpoints.
-    stats.value.pedidos = 12
-    stats.value.ventas = 1250.5
+    await cargarPedidos()
     stats.value.bajo_stock = 3
   } catch (error) {
     console.error('Error cargando datos:', error)
@@ -981,6 +1033,46 @@ const cargarDatos = async () => {
       detail: 'No se pudieron cargar los datos. Verifica que el backend esté iniciado.',
       life: 3500
     })
+  }
+}
+
+const cargarPedidos = async () => {
+  cargandoPedidos.value = true
+  errorPedidos.value = ''
+
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch('http://localhost:3000/api/orders', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      throw new Error(error.error || error.message || 'No se pudieron cargar los pedidos.')
+    }
+
+    pedidos.value = await res.json()
+    pedidosRecientes.value = pedidos.value.slice(0, 5)
+    stats.value.pedidos = pedidos.value.length
+    stats.value.ventas = pedidos.value.reduce(
+      (total, pedido) => total + Number(pedido.total || 0),
+      0
+    )
+  } catch (error) {
+    console.error('Error cargando pedidos:', error)
+    errorPedidos.value = error.message || 'No se pudieron cargar los pedidos.'
+    pedidos.value = []
+    pedidosRecientes.value = []
+    stats.value.pedidos = 0
+    stats.value.ventas = 0
+    toast.add({
+      severity: 'error',
+      summary: 'Error al cargar pedidos',
+      detail: errorPedidos.value,
+      life: 3500
+    })
+  } finally {
+    cargandoPedidos.value = false
   }
 }
 

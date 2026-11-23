@@ -1,7 +1,153 @@
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
+import fs from 'fs'
+import path from 'path'
+import PDFDocument from 'pdfkit'
 
 const prisma = new PrismaClient()
+
+const facturasDir = path.resolve(process.cwd(), 'uploads', 'facturas')
+
+const formatearDinero = (valor) =>
+  new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(Number(valor || 0))
+
+const generarPdfFactura = async ({ factura, pedido, usuario, detalles }) => {
+  fs.mkdirSync(facturasDir, { recursive: true })
+
+  const nombreArchivo = `factura-${factura.idFactura}.pdf`
+  const rutaFisica = path.join(facturasDir, nombreArchivo)
+  const rutaPublica = `/uploads/facturas/${nombreArchivo}`
+
+  await new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 })
+    const stream = fs.createWriteStream(rutaFisica)
+
+    stream.on('finish', resolve)
+    stream.on('error', reject)
+    doc.on('error', reject)
+    doc.pipe(stream)
+
+    doc.rect(0, 0, doc.page.width, 140).fill('#292521')
+    doc.fillColor('#ffffff')
+      .font('Helvetica-Bold')
+      .fontSize(28)
+      .text('SHOPWARE', 50, 45)
+    doc.fontSize(10)
+      .font('Helvetica')
+      .text('FACTURA DE COMPRA', 50, 82)
+      .text(`N. ${String(factura.idFactura).padStart(6, '0')}`, 50, 98)
+    doc.roundedRect(doc.page.width - 210, 45, 160, 50, 6).fill('#a8733e')
+    doc.fillColor('#ffffff')
+      .font('Helvetica-Bold')
+      .fontSize(11)
+      .text('PAGO EXITOSO', doc.page.width - 190, 58, { align: 'center', width: 120 })
+      .font('Helvetica')
+      .fontSize(9)
+      .text(new Date(factura.fechaCreacion).toLocaleDateString('es-MX'), doc.page.width - 190, 78, { align: 'center', width: 120 })
+
+    doc.fillColor('#292521')
+      .font('Helvetica-Bold')
+      .fontSize(11)
+      .text('DATOS DEL CLIENTE', 50, 170)
+    doc.font('Helvetica')
+      .fontSize(10)
+      .text(usuario?.nombre || 'Cliente Shopware', 50, 188)
+      .text(usuario?.correo || 'Sin correo registrado', 50, 203)
+      .text(`Pedido: ${pedido.idPedido}`, 50, 218)
+
+    const tablaTop = 260
+    doc.roundedRect(50, tablaTop, doc.page.width - 100, 28, 4).fill('#f7f1e9')
+    doc.fillColor('#292521')
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .text('PRODUCTO', 62, tablaTop + 9)
+      .text('TALLA', 330, tablaTop + 9)
+      .text('CANT.', 410, tablaTop + 9)
+      .text('IMPORTE', 470, tablaTop + 9)
+
+    let y = tablaTop + 38
+    for (const detalle of detalles) {
+      const importe = Number(detalle.precioUnitario) * detalle.cantidad
+      doc.font('Helvetica')
+        .fontSize(9)
+        .fillColor('#292521')
+        .text(detalle.producto?.nombre || 'Producto', 62, y, { width: 250 })
+        .text(detalle.productoTalla?.talla?.nombre || 'Sin talla', 330, y, { width: 65 })
+        .text(String(detalle.cantidad), 410, y, { width: 45 })
+        .text(formatearDinero(importe), 470, y, { width: 80, align: 'right' })
+      y += 30
+      doc.moveTo(50, y - 8).lineTo(doc.page.width - 50, y - 8).strokeColor('#eeeeee').stroke()
+    }
+
+    y += 20
+    doc.roundedRect(330, y, doc.page.width - 380, 70, 6).fill('#292521')
+    doc.fillColor('#ffffff')
+      .font('Helvetica-Bold')
+      .fontSize(10)
+      .text('TOTAL PAGADO', 345, y + 16)
+      .fontSize(17)
+      .text(formatearDinero(pedido.total), 345, y + 40)
+
+    doc.fillColor('#777777')
+      .font('Helvetica')
+      .fontSize(8)
+      .text('Gracias por tu compra.', 50, doc.page.height - 70)
+      .text('Documento generado automáticamente por Shopware.', 50, doc.page.height - 56)
+
+    doc.end()
+  })
+
+  return rutaPublica
+}
+
+const asegurarFactura = async (pedido) => {
+  const facturaExistente = await prisma.factura.findFirst({
+    where: { idPedido: pedido.idPedido }
+  })
+  if (facturaExistente?.rutaPdf) {
+    const rutaFisica = path.join(facturasDir, path.basename(facturaExistente.rutaPdf))
+    if (fs.existsSync(rutaFisica)) return facturaExistente
+  }
+
+  const pedidoCompleto = await prisma.pedido.findUnique({
+    where: { idPedido: pedido.idPedido },
+    include: {
+      usuario: true,
+      detalles: {
+        include: {
+          producto: true,
+          productoTalla: { include: { talla: true } }
+        }
+      }
+    }
+  })
+
+  if (!pedidoCompleto) {
+    throw new Error('Pedido no encontrado para generar la factura')
+  }
+
+  const factura = facturaExistente || await prisma.factura.create({
+    data: {
+      idUsuario: pedidoCompleto.idUsuario,
+      idPedido: pedidoCompleto.idPedido
+    }
+  })
+
+  const rutaPdf = await generarPdfFactura({
+    factura,
+    pedido: pedidoCompleto,
+    usuario: pedidoCompleto.usuario,
+    detalles: pedidoCompleto.detalles
+  })
+
+  return prisma.factura.update({
+    where: { idFactura: factura.idFactura },
+    data: { rutaPdf }
+  })
+}
 
 const getStripe = () => {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -153,7 +299,21 @@ export const confirmPayment = async (req, res) => {
     }
 
     if (pago.estado === 'PAID') {
-      return res.json({ message: 'El pago ya fue procesado', idPedido: pago.idPedido })
+      const pedidoExistente = await prisma.pedido.findUnique({
+        where: { idPedido: pago.idPedido }
+      })
+      if (!pedidoExistente) {
+        return res.status(404).json({ message: 'Pedido no encontrado' })
+      }
+      const factura = await asegurarFactura(pedidoExistente)
+      return res.json({
+        message: 'El pago ya fue procesado',
+        idPedido: pago.idPedido,
+        factura: {
+          idFactura: factura.idFactura,
+          rutaPdf: factura.rutaPdf
+        }
+      })
     }
 
     const pedido = await prisma.$transaction(async (tx) => {
@@ -206,9 +366,15 @@ export const confirmPayment = async (req, res) => {
       return nuevoPedido
     })
 
+    const factura = await asegurarFactura(pedido)
+
     return res.json({
       message: 'Pago completado',
-      idPedido: pedido.idPedido
+      idPedido: pedido.idPedido,
+      factura: {
+        idFactura: factura.idFactura,
+        rutaPdf: factura.rutaPdf
+      }
     })
   } catch (error) {
     console.error('Error confirmando pago:', error)
@@ -216,5 +382,55 @@ export const confirmPayment = async (req, res) => {
       return res.status(409).json({ message: error.message })
     }
     return res.status(500).json({ message: 'No se pudo confirmar el pago' })
+  }
+}
+
+export const downloadInvoice = async (req, res) => {
+  try {
+    const idPedido = Number(req.params.idPedido)
+    if (!Number.isInteger(idPedido) || idPedido <= 0) {
+      return res.status(400).json({ message: 'Pedido no válido' })
+    }
+
+    const pedido = await prisma.pedido.findFirst({
+      where: {
+        idPedido,
+        idUsuario: req.usuario.idUsuario
+      },
+      include: { facturas: true }
+    })
+
+    if (!pedido) {
+      return res.status(404).json({ message: 'Pedido no encontrado' })
+    }
+
+    let factura = pedido.facturas[0]
+    if (!factura) {
+      factura = await asegurarFactura(pedido)
+    } else if (!factura.rutaPdf) {
+      factura = await asegurarFactura(pedido)
+    }
+
+    const nombreArchivo = path.basename(factura.rutaPdf)
+    const rutaFisica = path.join(facturasDir, nombreArchivo)
+
+    if (!fs.existsSync(rutaFisica)) {
+      factura = await asegurarFactura(pedido)
+    }
+
+    const rutaFinal = path.join(facturasDir, path.basename(factura.rutaPdf))
+    if (!fs.existsSync(rutaFinal)) {
+      return res.status(404).json({ message: 'La factura no está disponible' })
+    }
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=factura-${String(factura.idFactura).padStart(6, '0')}.pdf`
+    )
+    return res.sendFile(rutaFinal)
+  } catch (error) {
+    console.error('Error descargando factura:', error)
+    return res.status(500).json({ message: 'No se pudo obtener la factura' })
   }
 }
