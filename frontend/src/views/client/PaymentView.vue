@@ -55,6 +55,52 @@
           Número de pedido: {{ idPedido }}
         </p>
 
+        <section
+          v-if="fechaPedido"
+          class="mx-auto mt-8 max-w-xl rounded-2xl border border-[#eee7de] bg-[#fbf9f6] p-5 text-left sm:p-6"
+          aria-live="polite"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="font-bold">Seguimiento del envío</h3>
+            <span class="rounded-full bg-white px-3 py-1 text-sm font-semibold text-[#8b6847]">
+              {{ textoEstadoEnvio }}
+            </span>
+          </div>
+
+          <div class="mt-6">
+            <div class="h-2 overflow-hidden rounded-full bg-[#e8e1d8]">
+              <div
+                class="h-full rounded-full bg-[#a8733e] transition-[width] duration-700"
+                :style="{ width: `${progresoEnvio}%` }"
+              ></div>
+            </div>
+            <ol class="mt-3 grid grid-cols-3 text-center text-xs font-medium sm:text-sm">
+              <li
+                v-for="(etapa, indice) in etapasEnvio"
+                :key="etapa"
+                class="flex flex-col items-center gap-2"
+                :class="indice + 1 <= pasoEnvio ? 'text-[#8b6847]' : 'text-gray-400'"
+              >
+                <span
+                  class="grid h-7 w-7 place-items-center rounded-full border-2 bg-white"
+                  :class="indice + 1 <= pasoEnvio ? 'border-[#a8733e] text-[#a8733e]' : 'border-gray-300'"
+                  aria-hidden="true"
+                >
+                  {{ indice + 1 < pasoEnvio ? '✓' : indice + 1 }}
+                </span>
+                {{ etapa }}
+              </li>
+            </ol>
+          </div>
+
+          <p class="mt-5 text-sm text-gray-600">
+            {{ descripcionEstadoEnvio }}
+          </p>
+          <p class="mt-2 text-xs text-gray-400">
+            El estado se actualiza automáticamente en esta pantalla.
+          </p>
+        </section>
+
         <button
           v-if="idPedido"
           type="button"
@@ -175,7 +221,7 @@
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { loadStripe } from '@stripe/stripe-js'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -197,6 +243,8 @@ const confirmarPendiente = ref(false)
 const items = ref([])
 const total = ref(0)
 const idPedido = ref('')
+const fechaPedido = ref('')
+const tiempoActual = ref(Date.now())
 const paymentIntentId = ref('')
 const clientSecret = ref('')
 
@@ -206,6 +254,36 @@ const compraDirecta = Boolean(
 
 let stripe = null
 let elementoTarjeta = null
+let intervaloSeguimiento = null
+
+const etapasEnvio = ['Preparando', 'En camino', 'Entregado']
+
+const segundosDesdePedido = computed(() => {
+  const timestamp = Date.parse(fechaPedido.value)
+  return Number.isFinite(timestamp)
+    ? Math.max(0, Math.floor((tiempoActual.value - timestamp) / 1000))
+    : 0
+})
+
+const pasoEnvio = computed(() => {
+  if (segundosDesdePedido.value < 10) return 1
+  if (segundosDesdePedido.value < 70) return 2
+  return 3
+})
+
+const progresoEnvio = computed(() => [15, 65, 100][pasoEnvio.value - 1])
+
+const textoEstadoEnvio = computed(() => [
+  'Pedido en preparación',
+  'Pedido en camino',
+  'Pedido entregado'
+][pasoEnvio.value - 1])
+
+const descripcionEstadoEnvio = computed(() => {
+  if (pasoEnvio.value === 1) return 'Estamos preparando tu pedido.'
+  if (pasoEnvio.value === 2) return 'Tu pedido va en camino.'
+  return 'Tu pedido ha llegado.'
+})
 
 const formatearPrecio = (valor) => {
   const numero = Number(valor)
@@ -387,6 +465,51 @@ const cargarPago = async () => {
   }
 }
 
+const cargarSeguimiento = async (id) => {
+  cargando.value = true
+  error.value = ''
+  pagoCompletado.value = false
+
+  if (intervaloSeguimiento) {
+    clearInterval(intervaloSeguimiento)
+    intervaloSeguimiento = null
+  }
+
+  try {
+    const token = localStorage.getItem('token')
+    const respuesta = await fetch(
+      `${API_URL}/api/payments/orders/${id}/tracking`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    )
+    const pedido = await respuesta.json()
+
+    if (!respuesta.ok) {
+      throw new Error(pedido.message || 'No se pudo cargar el seguimiento')
+    }
+
+    idPedido.value = pedido.idPedido
+    fechaPedido.value = pedido.fechaPedido
+    tiempoActual.value = Date.now()
+    pagoCompletado.value = true
+    intervaloSeguimiento = setInterval(() => {
+      tiempoActual.value = Date.now()
+    }, 1000)
+  } catch (errorCapturado) {
+    error.value = errorCapturado.message || 'No se pudo cargar el seguimiento'
+  } finally {
+    cargando.value = false
+  }
+}
+
+const cargarVista = () => {
+  if (route.query.pedido) {
+    return cargarSeguimiento(route.query.pedido)
+  }
+  return cargarPago()
+}
+
 const confirmarPedido = async () => {
   const token = localStorage.getItem('token')
 
@@ -411,8 +534,9 @@ const confirmarPedido = async () => {
   }
 
   idPedido.value = datos.idPedido
-  pagoCompletado.value = true
   confirmarPendiente.value = false
+  await router.replace({ query: { pedido: String(datos.idPedido) } })
+  await cargarSeguimiento(datos.idPedido)
 }
 
 const descargarFactura = async () => {
@@ -485,9 +609,13 @@ const pagar = async () => {
   }
 }
 
-onMounted(cargarPago)
+onMounted(cargarVista)
 
 onBeforeUnmount(() => {
+  if (intervaloSeguimiento) {
+    clearInterval(intervaloSeguimiento)
+    intervaloSeguimiento = null
+  }
   if (elementoTarjeta) {
     elementoTarjeta.destroy()
     elementoTarjeta = null

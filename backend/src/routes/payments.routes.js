@@ -3,7 +3,9 @@ import {
   createPaymentIntent,
   confirmPayment,
   markPaymentFailed,
-  downloadInvoice
+  downloadInvoice,
+  getOrderTracking,
+  getUserOrders
 } from '../controllers/payments.controller.js'
 import { verificarToken } from '../middlewares/auth.middleware.js'
 
@@ -14,5 +16,7 @@ router.post('/create-intent', createPaymentIntent)
 router.post('/confirm', confirmPayment)
 router.post('/failed', markPaymentFailed)
 router.get('/invoice/:idPedido', downloadInvoice)
+router.get('/orders', getUserOrders)
+router.get('/orders/:idPedido/tracking', getOrderTracking)
 
 export default router

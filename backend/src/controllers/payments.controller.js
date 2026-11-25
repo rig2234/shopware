@@ -476,3 +476,66 @@ export const downloadInvoice = async (req, res) => {
     return res.status(500).json({ message: 'No se pudo obtener la factura' })
   }
 }
+
+export const getOrderTracking = async (req, res) => {
+  try {
+    const idPedido = Number(req.params.idPedido)
+    if (!Number.isInteger(idPedido) || idPedido <= 0) {
+      return res.status(400).json({ message: 'Pedido no válido' })
+    }
+
+    const pedido = await prisma.pedido.findFirst({
+      where: {
+        idPedido,
+        idUsuario: req.usuario.idUsuario
+      },
+      select: {
+        idPedido: true,
+        fechaPedido: true
+      }
+    })
+
+    if (!pedido) {
+      return res.status(404).json({ message: 'Pedido no encontrado' })
+    }
+
+    return res.json(pedido)
+  } catch (error) {
+    console.error('Error obteniendo seguimiento del pedido:', error)
+    return res.status(500).json({ message: 'No se pudo obtener el seguimiento del pedido' })
+  }
+}
+
+export const getUserOrders = async (req, res) => {
+  try {
+    const pedidos = await prisma.pedido.findMany({
+      where: { idUsuario: req.usuario.idUsuario },
+      select: {
+        idPedido: true,
+        fechaPedido: true,
+        total: true,
+        detalles: {
+          select: {
+            cantidad: true,
+            producto: {
+              select: { nombre: true }
+            },
+            productoTalla: {
+              select: {
+                talla: {
+                  select: { nombre: true }
+                }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { fechaPedido: 'desc' }
+    })
+
+    return res.json(pedidos)
+  } catch (error) {
+    console.error('Error obteniendo pedidos del usuario:', error)
+    return res.status(500).json({ message: 'No se pudieron cargar tus pedidos' })
+  }
+}

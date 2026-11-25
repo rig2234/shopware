@@ -234,7 +234,7 @@
             </button>
           </div>
 
-          <nav class="grid grid-cols-2 gap-2 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm" aria-label="Secciones del panel lateral">
+          <nav class="grid grid-cols-3 gap-2 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm" aria-label="Secciones del panel lateral">
             <button
               type="button"
               :aria-pressed="seccionSidebar === 'categorias'"
@@ -248,14 +248,25 @@
             </button>
             <button
               type="button"
+              :aria-pressed="seccionSidebar === 'pedidos'"
+              :class="seccionSidebar === 'pedidos'
+                ? 'bg-[#1a1a1a] text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50'"
+              class="rounded-xl px-2 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
+              @click="abrirSeccionPedidos"
+            >
+              Pedidos
+            </button>
+            <button
+              type="button"
               :aria-pressed="seccionSidebar === 'direccion'"
               :class="seccionSidebar === 'direccion'
                 ? 'bg-[#1a1a1a] text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-50'"
-              class="rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
+              class="rounded-xl px-2 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574]"
               @click="abrirSeccionDireccion"
             >
-              Mi dirección
+              Dirección
             </button>
           </nav>
 
@@ -331,6 +342,103 @@
               </div>
             </div>
           </div>
+          </section>
+
+          <section v-show="seccionSidebar === 'pedidos'" class="mt-5">
+            <div class="mb-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#a8733e]">Compras</p>
+              <h3 class="mt-1 text-xl font-bold text-[#1a1a1a]">Mis pedidos</h3>
+              <p class="mt-1 text-sm leading-5 text-gray-600">
+                Consulta el estado y seguimiento de tus pedidos.
+              </p>
+            </div>
+
+            <div v-if="!estaAutenticado" class="rounded-2xl border border-[#ead8c3] bg-white p-5 shadow-sm">
+              <p class="font-semibold text-gray-900">Inicia sesión para ver tus pedidos</p>
+              <button
+                type="button"
+                class="mt-4 w-full rounded-xl bg-[#1a1a1a] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#3b342e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574] focus-visible:ring-offset-2"
+                @click="irALogin"
+              >
+                Iniciar sesión
+              </button>
+            </div>
+
+            <p v-else-if="cargandoPedidos" class="rounded-xl bg-white px-4 py-3 text-sm text-gray-500" role="status">
+              Cargando tus pedidos...
+            </p>
+
+            <div v-else-if="errorPedidos" class="rounded-xl bg-red-50 px-4 py-4 text-sm text-red-700" role="alert">
+              <p>{{ errorPedidos }}</p>
+              <button
+                type="button"
+                class="mt-3 font-semibold underline"
+                @click="cargarPedidos"
+              >
+                Intentar de nuevo
+              </button>
+            </div>
+
+            <div v-else-if="!pedidos.length" class="rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm">
+              <p class="font-semibold text-gray-900">Aún no tienes pedidos</p>
+              <p class="mt-1 text-sm text-gray-500">Tus compras aparecerán aquí.</p>
+            </div>
+
+            <div v-else class="space-y-4">
+              <article
+                v-for="pedido in pedidos"
+                :key="pedido.idPedido"
+                class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 class="font-bold text-gray-900">Pedido #{{ pedido.idPedido }}</h4>
+                    <p class="mt-1 text-xs text-gray-500">{{ formatearFechaPedido(pedido.fechaPedido) }}</p>
+                  </div>
+                  <span class="shrink-0 rounded-full bg-[#f8f1e9] px-2.5 py-1 text-xs font-semibold text-[#8b633d]">
+                    {{ estadoEnvioPedido(pedido.fechaPedido) }}
+                  </span>
+                </div>
+
+                <div class="mt-4">
+                  <div class="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      class="h-full rounded-full bg-[#a8733e] transition-[width] duration-700"
+                      :style="{ width: `${progresoEnvioPedido(pedido.fechaPedido)}%` }"
+                    ></div>
+                  </div>
+                  <ol class="mt-2 grid grid-cols-3 text-center text-[0.65rem] font-medium">
+                    <li
+                      v-for="(etapa, indice) in etapasEnvio"
+                      :key="etapa"
+                      :class="indice + 1 <= pasoEnvioPedido(pedido.fechaPedido) ? 'text-[#8b6847]' : 'text-gray-400'"
+                    >
+                      {{ etapa }}
+                    </li>
+                  </ol>
+                </div>
+
+                <ul class="mt-4 space-y-1 border-t border-gray-100 pt-3 text-sm text-gray-600">
+                  <li v-for="(detalle, indice) in pedido.detalles" :key="`${pedido.idPedido}-${indice}`">
+                    {{ detalle.producto?.nombre || 'Producto' }}
+                    <span class="text-gray-400">
+                      · {{ detalle.productoTalla?.talla?.nombre || 'Sin talla' }} · ×{{ detalle.cantidad }}
+                    </span>
+                  </li>
+                </ul>
+
+                <div class="mt-3 flex items-center justify-between gap-3">
+                  <p class="text-sm font-bold text-[#8b6847]">${{ formatPrice(pedido.total) }}</p>
+                  <router-link
+                    :to="{ name: 'Pago', query: { pedido: String(pedido.idPedido) } }"
+                    class="text-sm font-semibold text-[#8b6847] underline decoration-[#d4a574] underline-offset-2 hover:text-[#a8733e]"
+                    @click="cerrarSidebar"
+                  >
+                    Ver seguimiento
+                  </router-link>
+                </div>
+              </article>
+            </div>
           </section>
 
           <section v-show="seccionSidebar === 'direccion'" class="mt-5">
@@ -639,6 +747,11 @@ const direccionCargada = ref(false)
 const errorDireccion = ref('')
 const direccionInvalida = ref(false)
 const mensajeDireccion = ref('')
+const pedidos = ref([])
+const cargandoPedidos = ref(false)
+const pedidosCargados = ref(false)
+const errorPedidos = ref('')
+const tiempoActualPedidos = ref(Date.now())
 const contenedorMapa = ref(null)
 const coordenadasReferencia = ref(null)
 const errorMapa = ref('')
@@ -652,6 +765,9 @@ let temporizadorGeocodificacion = null
 let controladorGeocodificacion = null
 let solicitudGeocodificacion = 0
 let ultimaSolicitudGeocodificacion = 0
+let intervaloPedidos = null
+
+const etapasEnvio = ['Preparando', 'En camino', 'Entregado']
 
 const beneficios = [
   { icono: '↗', titulo: 'Envío Rápido', descripcion: 'Entrega en 2-3 días hábiles' },
@@ -716,6 +832,74 @@ const abrirSeccionDireccion = () => {
   if (estaAutenticado.value && !direccionCargada.value) {
     cargarDireccion()
   }
+}
+
+const abrirSeccionPedidos = () => {
+  seccionSidebar.value = 'pedidos'
+  sidebarAbierta.value = true
+
+  if (estaAutenticado.value && !pedidosCargados.value) {
+    cargarPedidos()
+  }
+}
+
+const cargarPedidos = async () => {
+  if (!estaAutenticado.value || cargandoPedidos.value) return
+
+  cargandoPedidos.value = true
+  errorPedidos.value = ''
+
+  try {
+    const response = await fetch('http://localhost:3000/api/payments/orders', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'No se pudieron cargar tus pedidos')
+    }
+
+    pedidos.value = Array.isArray(data) ? data : []
+    pedidosCargados.value = true
+  } catch (error) {
+    console.error('Error al cargar los pedidos:', error)
+    errorPedidos.value = error.message || 'No se pudieron cargar tus pedidos'
+  } finally {
+    cargandoPedidos.value = false
+  }
+}
+
+const pasoEnvioPedido = (fechaPedido) => {
+  const timestamp = Date.parse(fechaPedido)
+  const segundos = Number.isFinite(timestamp)
+    ? Math.max(0, Math.floor((tiempoActualPedidos.value - timestamp) / 1000))
+    : 0
+
+  if (segundos < 10) return 1
+  if (segundos < 70) return 2
+  return 3
+}
+
+const estadoEnvioPedido = (fechaPedido) =>
+  ['Pedido en preparación', 'Pedido en camino', 'Pedido entregado'][
+    pasoEnvioPedido(fechaPedido) - 1
+  ]
+
+const progresoEnvioPedido = (fechaPedido) =>
+  [15, 65, 100][pasoEnvioPedido(fechaPedido) - 1]
+
+const formatearFechaPedido = (fechaPedido) => {
+  if (!fechaPedido) return 'Fecha no disponible'
+
+  const fecha = new Date(fechaPedido)
+  return Number.isNaN(fecha.getTime())
+    ? 'Fecha no disponible'
+    : new Intl.DateTimeFormat('es-MX', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(fecha)
 }
 
 const cargarDireccion = async () => {
@@ -1250,6 +1434,10 @@ const cerrarSesion = () => {
 }
 
 onMounted(() => {
+  intervaloPedidos = setInterval(() => {
+    tiempoActualPedidos.value = Date.now()
+  }, 1000)
+
   try {
     const usuarioGuardado = localStorage.getItem('usuario')
     usuario.value = usuarioGuardado ? JSON.parse(usuarioGuardado) : null
@@ -1280,6 +1468,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (intervaloPedidos) {
+    clearInterval(intervaloPedidos)
+    intervaloPedidos = null
+  }
   cancelarGeocodificacion()
   mapaDireccion?.remove()
   mapaDireccion = null
