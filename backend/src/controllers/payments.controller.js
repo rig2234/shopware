@@ -167,17 +167,53 @@ export const createPaymentIntent = async (req, res) => {
   try {
     const idUsuario = req.usuario.idUsuario
     const stripe = getStripe()
+    const compraDirecta = ['idProducto', 'idProductoTalla', 'cantidad']
+      .some((campo) => req.body?.[campo] !== undefined)
+    let items
 
-    const items = await prisma.carrito.findMany({
-      where: { idUsuario },
-      include: {
-        producto: true,
-        productoTalla: { include: { talla: true } }
+    if (compraDirecta) {
+      const idProducto = Number(req.body.idProducto)
+      const idProductoTalla = Number(req.body.idProductoTalla)
+      const cantidad = Number(req.body.cantidad)
+
+      if (
+        !Number.isInteger(idProducto) || idProducto <= 0 ||
+        !Number.isInteger(idProductoTalla) || idProductoTalla <= 0 ||
+        !Number.isInteger(cantidad) || cantidad <= 0
+      ) {
+        return res.status(400).json({ message: 'Los datos de la compra no son válidos' })
       }
-    })
+
+      const productoTalla = await prisma.productoTalla.findUnique({
+        where: { idProductoTalla },
+        include: { producto: true, talla: true }
+      })
+
+      if (!productoTalla || productoTalla.idProducto !== idProducto) {
+        return res.status(400).json({ message: 'El producto o la talla no son válidos' })
+      }
+
+      items = [{
+        idProducto,
+        idProductoTalla,
+        cantidad,
+        producto: productoTalla.producto,
+        productoTalla
+      }]
+    } else {
+      items = await prisma.carrito.findMany({
+        where: { idUsuario },
+        include: {
+          producto: true,
+          productoTalla: { include: { talla: true } }
+        }
+      })
+    }
 
     if (!items.length) {
-      return res.status(400).json({ message: 'El carrito está vacío' })
+      return res.status(400).json({
+        message: compraDirecta ? 'No se encontró el producto solicitado' : 'El carrito está vacío'
+      })
     }
 
     for (const item of items) {
@@ -205,7 +241,7 @@ export const createPaymentIntent = async (req, res) => {
       automatic_payment_methods: { enabled: true },
       metadata: {
         idUsuario: String(idUsuario),
-        tipo: 'shopware_pago_escolar'
+        tipo: compraDirecta ? 'compra_directa' : 'shopware_pago_escolar'
       }
     })
 
@@ -353,7 +389,9 @@ export const confirmPayment = async (req, res) => {
         })
       }
 
-      await tx.carrito.deleteMany({ where: { idUsuario: pago.idUsuario } })
+      if (intent.metadata?.tipo !== 'compra_directa') {
+        await tx.carrito.deleteMany({ where: { idUsuario: pago.idUsuario } })
+      }
       await tx.pagoPendiente.update({
         where: { idPagoPendiente: pago.idPagoPendiente },
         data: {

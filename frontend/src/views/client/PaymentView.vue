@@ -13,10 +13,10 @@
         </div>
 
         <router-link
-          to="/carrito"
+          :to="compraDirecta ? `/producto/${route.query.producto}` : '/carrito'"
           class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold hover:border-[#d4a574]"
         >
-          ← Volver al carrito
+          {{ compraDirecta ? '← Volver al producto' : '← Volver al carrito' }}
         </router-link>
       </header>
 
@@ -148,7 +148,7 @@
           <ul class="mt-4 divide-y divide-gray-100">
             <li
               v-for="item in items"
-              :key="item.idCarrito"
+              :key="item.idCarrito || item.idProductoTalla"
               class="flex justify-between gap-4 py-3 text-sm"
             >
               <span class="text-gray-600">
@@ -177,9 +177,10 @@
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { loadStripe } from '@stripe/stripe-js'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
@@ -198,6 +199,10 @@ const total = ref(0)
 const idPedido = ref('')
 const paymentIntentId = ref('')
 const clientSecret = ref('')
+
+const compraDirecta = Boolean(
+  route.query.producto || route.query.talla || route.query.cantidad
+)
 
 let stripe = null
 let elementoTarjeta = null
@@ -245,24 +250,69 @@ const cargarPago = async () => {
       throw new Error('No se pudo inicializar Stripe')
     }
 
-    const respuestaCarrito = await fetch(`${API_URL}/api/cart`, {
-      headers: {
-        Authorization: `Bearer ${token}`
+    let datosCompraDirecta = null
+
+    if (compraDirecta) {
+      const idProducto = Number(route.query.producto)
+      const idProductoTalla = Number(route.query.talla)
+      const cantidad = Number(route.query.cantidad)
+
+      if (
+        !Number.isInteger(idProducto) || idProducto <= 0 ||
+        !Number.isInteger(idProductoTalla) || idProductoTalla <= 0 ||
+        !Number.isInteger(cantidad) || cantidad <= 0
+      ) {
+        throw new Error('Los datos de la compra no son válidos')
       }
-    })
 
-    const carrito = await respuestaCarrito.json()
+      const respuestaProducto = await fetch(
+        `${API_URL}/api/products/${idProducto}`
+      )
+      const producto = await respuestaProducto.json()
 
-    if (!respuestaCarrito.ok) {
-      throw new Error(carrito.message || 'No se pudo cargar el carrito')
-    }
+      if (!respuestaProducto.ok) {
+        throw new Error(producto.error || 'No se pudo cargar el producto')
+      }
 
-    items.value = Array.isArray(carrito) ? carrito : []
+      const productoTalla = producto.tallas?.find(
+        (item) => Number(item.idProductoTalla) === idProductoTalla
+      )
 
-    if (!items.value.length) {
-      carritoVacio.value = true
-      cargando.value = false
-      return
+      if (!productoTalla || Number(productoTalla.stock || 0) < cantidad) {
+        throw new Error('No hay stock suficiente para la talla seleccionada')
+      }
+
+      const precio = Number(producto.precio)
+      const descuento = Number(producto.descuento) || 0
+      const precioUnitario = precio * (1 - descuento / 100)
+
+      items.value = [{
+        idProductoTalla,
+        producto,
+        cantidad,
+        subtotal: precioUnitario * cantidad
+      }]
+      datosCompraDirecta = { idProducto, idProductoTalla, cantidad }
+    } else {
+      const respuestaCarrito = await fetch(`${API_URL}/api/cart`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const carrito = await respuestaCarrito.json()
+
+      if (!respuestaCarrito.ok) {
+        throw new Error(carrito.message || 'No se pudo cargar el carrito')
+      }
+
+      items.value = Array.isArray(carrito) ? carrito : []
+
+      if (!items.value.length) {
+        carritoVacio.value = true
+        cargando.value = false
+        return
+      }
     }
 
     const respuestaIntent = await fetch(
@@ -270,8 +320,10 @@ const cargarPago = async () => {
       {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify(datosCompraDirecta || {})
       }
     )
 

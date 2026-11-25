@@ -196,6 +196,16 @@
               <i v-if="!agregando && tallaActual" class="pi pi-shopping-bag" aria-hidden="true"></i>
               {{ agregando ? 'Agregando...' : (productoAgotado ? 'Producto agotado' : (tallaActual ? 'Agregar al carrito' : 'Selecciona una talla')) }}
             </button>
+
+            <button
+              type="button"
+              class="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full border-2 border-[#a8733e] bg-white px-6 py-4 font-semibold text-[#8b6847] transition hover:bg-[#fbf8f4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e] disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-500"
+              :disabled="!tallaActual || getStock(tallaActual) === 0 || comprando"
+              @click="comprarAhora"
+            >
+              <i v-if="!comprando" class="pi pi-bolt" aria-hidden="true"></i>
+              {{ comprando ? 'Preparando compra...' : 'Comprar ahora' }}
+            </button>
           </div>
         </div>
       </section>
@@ -214,6 +224,7 @@ const producto = ref(null)
 const cargando = ref(true)
 const error = ref('')
 const agregando = ref(false)
+const comprando = ref(false)
 const tallaSeleccionada = ref(null)
 const mensaje = ref('')
 const errorAgregar = ref(false)
@@ -343,6 +354,28 @@ const agregarAlCarrito = async () => {
     mensaje.value = error.message
   } finally {
     agregando.value = false
+  }
+}
+
+const comprarAhora = async () => {
+  if (!tallaActual.value || getStock(tallaActual.value) <= 0) {
+    errorAgregar.value = true
+    mensaje.value = 'Selecciona una talla disponible.'
+    return
+  }
+
+  comprando.value = true
+  try {
+    await router.push({
+      name: 'Pago',
+      query: {
+        producto: String(producto.value.idProducto),
+        talla: String(tallaSeleccionada.value),
+        cantidad: String(cantidad.value)
+      }
+    })
+  } finally {
+    comprando.value = false
   }
 }
 
