@@ -413,7 +413,7 @@
                 <div class="p-4 pb-3">
                   <h4 class="font-semibold text-gray-900">Referencia en el mapa</h4>
                   <p class="mt-1 text-xs leading-5 text-gray-600">
-                    Mapa centrado en Culiacán, Sinaloa. Puedes moverlo y marcar un punto; esa marca es solo visual y no se guarda.
+                    Selecciona un punto para completar la dirección de entrega. Revisa el campo y guarda los cambios.
                   </p>
                 </div>
                 <div
@@ -433,6 +433,12 @@
                     >
                       Quitar marca
                     </button>
+                  </p>
+                  <p v-if="buscandoDireccionMapa" class="mt-2 text-xs text-gray-600" role="status">
+                    Buscando la dirección del punto seleccionado...
+                  </p>
+                  <p v-if="errorGeocodificacion" class="mt-2 text-xs text-amber-700" role="status">
+                    {{ errorGeocodificacion }}
                   </p>
                   <p v-if="errorMapa" class="mt-2 text-xs text-amber-700" role="status">
                     {{ errorMapa }}
@@ -636,10 +642,16 @@ const mensajeDireccion = ref('')
 const contenedorMapa = ref(null)
 const coordenadasReferencia = ref(null)
 const errorMapa = ref('')
+const buscandoDireccionMapa = ref(false)
+const errorGeocodificacion = ref('')
 
 const centroCuliacan = [24.8091, -107.394]
 let mapaDireccion = null
 let marcadorDireccion = null
+let temporizadorGeocodificacion = null
+let controladorGeocodificacion = null
+let solicitudGeocodificacion = 0
+let ultimaSolicitudGeocodificacion = 0
 
 const beneficios = [
   { icono: '↗', titulo: 'Envío Rápido', descripcion: 'Entrega en 2-3 días hábiles' },
@@ -738,9 +750,11 @@ const cargarDireccion = async () => {
 }
 
 const limpiarEstadoDireccion = () => {
+  cancelarGeocodificacion()
   errorDireccion.value = ''
   mensajeDireccion.value = ''
   direccionInvalida.value = false
+  errorGeocodificacion.value = ''
 }
 
 const guardarDireccion = async () => {
@@ -782,9 +796,122 @@ const guardarDireccion = async () => {
 }
 
 const limpiarReferencia = () => {
+  cancelarGeocodificacion()
   marcadorDireccion?.remove()
   marcadorDireccion = null
   coordenadasReferencia.value = null
+}
+
+const cancelarGeocodificacion = () => {
+  clearTimeout(temporizadorGeocodificacion)
+  temporizadorGeocodificacion = null
+  controladorGeocodificacion?.abort()
+  controladorGeocodificacion = null
+  solicitudGeocodificacion += 1
+  buscandoDireccionMapa.value = false
+}
+
+const formatearDireccion = (resultado) => {
+  const partesDireccion = resultado.address || {}
+  const calle = [
+    partesDireccion.house_number,
+    partesDireccion.road ||
+      partesDireccion.pedestrian ||
+      partesDireccion.residential ||
+      partesDireccion.footway
+  ].filter(Boolean).join(' ')
+  const colonia =
+    partesDireccion.suburb ||
+    partesDireccion.neighbourhood ||
+    partesDireccion.quarter ||
+    partesDireccion.city_district
+  const localidad =
+    partesDireccion.city ||
+    partesDireccion.town ||
+    partesDireccion.village ||
+    partesDireccion.municipality ||
+    partesDireccion.county
+  const partes = [calle, colonia, localidad, partesDireccion.state]
+    .filter(Boolean)
+    .filter((parte, indice, lista) => lista.indexOf(parte) === indice)
+
+  let direccionFormateada = ''
+  for (const parte of partes) {
+    const siguienteDireccion = direccionFormateada
+      ? `${direccionFormateada}, ${parte}`
+      : parte
+
+    if (siguienteDireccion.length > 100) {
+      break
+    }
+
+    direccionFormateada = siguienteDireccion
+  }
+
+  return direccionFormateada || String(resultado.display_name || '').slice(0, 100)
+}
+
+const buscarDireccionDelPunto = ({ lat, lng }) => {
+  clearTimeout(temporizadorGeocodificacion)
+  controladorGeocodificacion?.abort()
+
+  const idSolicitud = ++solicitudGeocodificacion
+  const controlador = new AbortController()
+  controladorGeocodificacion = controlador
+  buscandoDireccionMapa.value = true
+  errorGeocodificacion.value = ''
+
+  const esperaMinima = Math.max(0, 1000 - (Date.now() - ultimaSolicitudGeocodificacion))
+  temporizadorGeocodificacion = setTimeout(async () => {
+    temporizadorGeocodificacion = null
+    ultimaSolicitudGeocodificacion = Date.now()
+
+    try {
+      const parametros = new URLSearchParams({
+        format: 'jsonv2',
+        lat: String(lat),
+        lon: String(lng),
+        addressdetails: '1',
+        'accept-language': 'es'
+      })
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?${parametros}`,
+        { signal: controlador.signal }
+      )
+
+      if (!response.ok) {
+        throw new Error('No se pudo obtener la dirección del punto.')
+      }
+
+      const resultado = await response.json()
+      const direccionEncontrada = formatearDireccion(resultado)
+
+      if (!direccionEncontrada) {
+        throw new Error('No se encontró una dirección para este punto.')
+      }
+
+      if (idSolicitud !== solicitudGeocodificacion) {
+        return
+      }
+
+      direccion.value = direccionEncontrada
+      errorDireccion.value = ''
+      direccionInvalida.value = false
+      mensajeDireccion.value = 'Dirección completada desde el punto seleccionado. Guarda los cambios.'
+    } catch (error) {
+      if (error.name === 'AbortError' || idSolicitud !== solicitudGeocodificacion) {
+        return
+      }
+
+      console.error('Error al buscar la dirección del punto:', error)
+      errorGeocodificacion.value = error.message || 'No se pudo obtener la dirección del punto.'
+    } finally {
+      if (idSolicitud === solicitudGeocodificacion) {
+        controladorGeocodificacion = null
+        buscandoDireccionMapa.value = false
+      }
+    }
+  }, esperaMinima)
 }
 
 const inicializarMapaDireccion = async () => {
@@ -843,6 +970,8 @@ const inicializarMapaDireccion = async () => {
       } else {
         marcadorDireccion.setLatLng(evento.latlng)
       }
+
+      buscarDireccionDelPunto({ lat, lng })
     })
   } catch (error) {
     console.error('Error al inicializar el mapa:', error)
@@ -1151,6 +1280,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  cancelarGeocodificacion()
   mapaDireccion?.remove()
   mapaDireccion = null
 })
