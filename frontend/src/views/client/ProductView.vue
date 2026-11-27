@@ -1,11 +1,11 @@
 <template>
-  <main class="min-h-screen bg-[#f7f5f2] px-4 py-6 text-[#292521] sm:px-6 sm:py-10">
+  <main class="min-h-screen bg-[radial-gradient(ellipse_at_top,_#fff_0%,_#f7f5f2_55%,_#f2eee8_100%)] px-4 py-6 text-[#292521] sm:px-6 sm:py-10">
     <div class="mx-auto max-w-7xl">
       <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <nav aria-label="Ruta de navegación">
+        <nav aria-label="Ruta de navegación" class="rounded-full border border-[#eee7de] bg-white/80 px-4 py-2 shadow-sm backdrop-blur">
           <ol class="flex flex-wrap items-center gap-2 text-sm">
             <li>
-              <router-link to="/tienda" class="text-[#8b6847] transition-colors hover:text-[#292521]">
+              <router-link to="/tienda" class="font-semibold text-[#8b6847] transition-colors hover:text-[#292521]">
                 Tienda
               </router-link>
             </li>
@@ -18,7 +18,7 @@
 
         <button
           type="button"
-          class="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d9d2c8] bg-white px-5 text-sm font-semibold text-[#292521] shadow-sm transition hover:border-[#a8733e] hover:text-[#8b6847] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e]"
+          class="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#e5ddd2] bg-white px-5 text-sm font-semibold text-[#292521] shadow-[0_6px_18px_-12px_rgba(54,39,22,0.5)] transition hover:border-[#a8733e] hover:text-[#8b6847] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e]"
           @click="irACarrito"
         >
           <i class="pi pi-shopping-bag" aria-hidden="true"></i>
@@ -29,7 +29,7 @@
       <section
         v-if="cargando"
         aria-live="polite"
-        class="grid min-h-[28rem] place-items-center rounded-[2rem] border border-[#eee7de] bg-white shadow-sm"
+        class="grid min-h-[28rem] place-items-center rounded-[2rem] border border-[#eee7de] bg-white shadow-[0_24px_70px_-48px_rgba(54,39,22,0.45)]"
       >
         <div class="text-center">
           <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#eadfce] border-t-[#a8733e] motion-reduce:animate-none"></div>
@@ -39,7 +39,7 @@
 
       <section
         v-else-if="error"
-        class="rounded-[2rem] border border-red-100 bg-white px-6 py-16 text-center shadow-sm"
+        class="rounded-[2rem] border border-red-100 bg-white px-6 py-16 text-center shadow-[0_24px_70px_-48px_rgba(54,39,22,0.45)]"
       >
         <i class="pi pi-exclamation-circle mb-4 text-4xl text-red-500" aria-hidden="true"></i>
         <p role="alert" class="text-lg font-semibold text-red-700">{{ error }}</p>
@@ -53,34 +53,34 @@
       </section>
 
       <section v-else-if="producto" class="@container">
-        <div class="grid grid-cols-1 items-center gap-8 rounded-[2rem] border border-[#eee7de] bg-white p-4 shadow-[0_24px_70px_-48px_rgba(54,39,22,0.45)] sm:gap-12 sm:p-8 @4xl:grid-cols-2 @4xl:gap-16 lg:p-12">
-          <div class="relative aspect-[4/5] max-h-[720px] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#f0e9df] via-[#f7f4ef] to-[#e9dfd2]">
-            <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#d4a574]/20 blur-3xl" aria-hidden="true"></div>
-            <div class="absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-white/70 blur-3xl" aria-hidden="true"></div>
+        <div class="grid grid-cols-1 items-center gap-8 rounded-[2rem] border border-[#e9e1d7] bg-white/95 p-3 shadow-[0_30px_90px_-56px_rgba(54,39,22,0.55)] sm:gap-12 sm:p-6 @4xl:grid-cols-2 @4xl:gap-14 lg:p-8">
+          <div class="relative aspect-[4/5] max-h-[720px] overflow-hidden rounded-[1.5rem] bg-[radial-gradient(ellipse_at_45%_35%,_#fff_0%,_#f7f2eb_44%,_#e9dfd2_100%)] ring-1 ring-inset ring-[#e8dfd3]">
+            <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#d4a574]/25 blur-3xl" aria-hidden="true"></div>
+            <div class="absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-white/80 blur-3xl" aria-hidden="true"></div>
             <img
               :src="urlImagen(producto.imagen)"
               :alt="producto.nombre || 'Producto Shopware'"
-              class="relative z-10 h-full w-full object-contain p-6 sm:p-10"
+              class="relative z-10 h-full w-full object-contain p-5 transition-transform duration-700 hover:scale-[1.025] sm:p-10"
             />
             <span
               v-if="Number(producto.descuento) > 0"
-              class="absolute left-5 top-5 z-20 rounded-full bg-[#292521] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-lg"
+              class="absolute left-5 top-5 z-20 rounded-full bg-[#292521] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-black/15"
             >
               -{{ Number(producto.descuento) }}%
             </span>
           </div>
 
-          <div class="flex flex-col py-2 sm:py-4">
+          <div class="flex flex-col py-3 sm:py-5">
             <p class="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-[#a8733e]">
               {{ producto.categoria?.nombre || 'Shopware' }}
             </p>
 
-            <h1 class="text-3xl font-semibold leading-tight tracking-tight text-[#292521] sm:text-4xl lg:text-5xl">
+            <h1 class="text-3xl font-bold leading-[1.08] tracking-tight text-[#292521] sm:text-4xl lg:text-[3.25rem]">
               {{ producto.nombre }}
             </h1>
 
-            <div class="my-7 flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-[#eee7de] pb-7">
-              <p class="text-4xl font-semibold tracking-tight text-[#a8733e]">
+            <div class="my-6 flex flex-wrap items-end gap-x-4 gap-y-2 border-b border-[#eee7de] pb-6 sm:my-7 sm:pb-7">
+              <p class="text-4xl font-bold tracking-tight text-[#8b5e34]">
                 ${{ formatPrice(precioFinal) }}
               </p>
               <p
@@ -91,31 +91,31 @@
               </p>
               <span
                 v-if="Number(producto.descuento) > 0"
-                class="mb-1 rounded-full bg-[#f7eee2] px-3 py-1 text-xs font-semibold text-[#8b6847]"
+                class="mb-1 rounded-full border border-[#ead8c3] bg-[#fbf6ee] px-3 py-1.5 text-xs font-bold text-[#8b6847]"
               >
                 Ahorras ${{ formatPrice(Number(producto.precio) - precioFinal) }}
               </span>
             </div>
 
-            <div class="mb-3 flex flex-wrap items-center gap-2 text-sm">
+            <div class="mb-5 inline-flex w-fit flex-wrap items-center gap-2 rounded-full border border-[#e8e2d9] bg-[#fbfaf8] px-3 py-2 text-sm">
               <span
-                class="h-2.5 w-2.5 rounded-full"
+                class="h-2.5 w-2.5 rounded-full ring-4 ring-white"
                 :class="tallasDisponibles ? 'bg-emerald-500' : 'bg-red-500'"
                 aria-hidden="true"
               ></span>
-              <p v-if="tallas.length && tallasDisponibles" role="status" class="font-medium text-gray-700">
+              <p v-if="tallas.length && tallasDisponibles" role="status" class="font-semibold text-gray-700">
                 Disponible en {{ tallasDisponibles }} {{ tallasDisponibles === 1 ? 'talla' : 'tallas' }}
               </p>
-              <p v-else-if="tallas.length" role="status" class="font-medium text-red-700">
+              <p v-else-if="tallas.length" role="status" class="font-semibold text-red-700">
                 Producto agotado en todas las tallas
               </p>
-              <p v-else role="status" class="font-medium text-gray-500">
+              <p v-else role="status" class="font-semibold text-gray-600">
                 No hay tallas configuradas
               </p>
             </div>
 
             <fieldset class="mb-7">
-              <legend class="mb-3 text-sm font-semibold text-[#292521]">
+              <legend class="mb-3 text-sm font-bold text-[#292521]">
                 Selecciona una talla
               </legend>
 
@@ -129,13 +129,13 @@
                   :aria-pressed="tallaSeleccionada === item.idProductoTalla"
                   :class="[
                     tallaSeleccionada === item.idProductoTalla
-                      ? 'border-[#a8733e] bg-[#a8733e] text-white shadow-md shadow-[#a8733e]/20'
-                      : 'border-[#ded8cf] bg-white text-[#292521]',
+                      ? 'border-[#8b5e34] bg-[#8b5e34] text-white shadow-lg shadow-[#8b5e34]/20'
+                      : 'border-[#ded8cf] bg-white text-[#292521] shadow-sm',
                     getStock(item) === 0
-                      ? 'cursor-not-allowed border-dashed bg-[#f4f1ed] text-gray-500'
-                      : 'transition hover:border-[#a8733e] hover:bg-[#fbf8f4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e]'
+                      ? 'cursor-not-allowed border-dashed bg-[#f4f1ed] text-gray-500 shadow-none'
+                      : 'transition duration-200 hover:-translate-y-0.5 hover:border-[#a8733e] hover:bg-[#fbf8f4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e]'
                   ]"
-                  class="flex min-h-16 min-w-16 flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-4 py-2 font-semibold"
+                  class="flex min-h-16 min-w-16 flex-col items-center justify-center gap-0.5 rounded-2xl border-2 px-4 py-2 font-bold"
                   @click="seleccionarTalla(item)"
                 >
                   <span>{{ item.talla?.nombre || 'Talla' }}</span>
@@ -152,7 +152,7 @@
 
             <div
               v-if="tallaActual && getStock(tallaActual) > 0"
-              class="mb-7 flex flex-wrap items-end justify-between gap-4 rounded-2xl bg-[#f8f6f2] p-4"
+              class="mb-7 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-[#eee7de] bg-[#faf8f5] p-4"
             >
               <div>
                 <label for="cantidad" class="mb-2 block text-sm font-semibold">
@@ -161,7 +161,7 @@
                 <select
                   id="cantidad"
                   v-model.number="cantidad"
-                  class="min-h-11 w-24 rounded-xl border border-[#d9d2c8] bg-white px-3 py-2 focus:border-[#a8733e] focus:outline-none focus:ring-2 focus:ring-[#a8733e]/20"
+                  class="min-h-11 w-24 rounded-xl border border-[#d9d2c8] bg-white px-3 py-2 shadow-sm focus:border-[#a8733e] focus:outline-none focus:ring-2 focus:ring-[#a8733e]/20"
                 >
                   <option
                     v-for="opcion in opcionesCantidad"
@@ -189,7 +189,7 @@
 
             <button
               type="button"
-              class="mt-auto inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[#292521] px-6 py-4 font-semibold text-white shadow-lg shadow-[#292521]/10 transition hover:bg-[#a8733e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none"
+              class="mt-auto inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#292521] px-6 py-4 font-bold text-white shadow-lg shadow-[#292521]/15 transition duration-200 hover:-translate-y-0.5 hover:bg-[#8b5e34] hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e] disabled:cursor-not-allowed disabled:translate-y-0 disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none"
               :disabled="!tallaActual || getStock(tallaActual) === 0 || agregando"
               @click="agregarAlCarrito"
             >
@@ -199,7 +199,7 @@
 
             <button
               type="button"
-              class="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full border-2 border-[#a8733e] bg-white px-6 py-4 font-semibold text-[#8b6847] transition hover:bg-[#fbf8f4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e] disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-500"
+              class="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-[#c7a781] bg-white px-6 py-4 font-bold text-[#8b6847] shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#fbf8f4] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a8733e] disabled:cursor-not-allowed disabled:translate-y-0 disabled:border-gray-300 disabled:text-gray-500 disabled:shadow-none"
               :disabled="!tallaActual || getStock(tallaActual) === 0 || comprando"
               @click="comprarAhora"
             >

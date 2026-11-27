@@ -398,6 +398,9 @@
                     <label class="block text-sm font-semibold text-slate-300 mb-3">
                       Tallas y stock
                     </label>
+                    <p class="mb-3 text-sm text-slate-400">
+                      Captura el stock directamente; la talla se seleccionará automáticamente al ingresar un valor.
+                    </p>
 
                     <div v-if="tallas.length" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div
@@ -423,7 +426,7 @@
                           :maxFractionDigits="0"
                           :showButtons="true"
                           placeholder="Stock"
-                          :disabled="!tallasSeleccionadas.includes(talla.idTalla)"
+                          @update:model-value="incluirTallaAlCapturarStock(talla.idTalla, $event)"
                           class="min-w-0 flex-1"
                         />
                       </div>
@@ -1513,6 +1516,14 @@ const editarProducto = (producto) => {
 
   mostrarFormNuevoProducto.value = true
   seccionActiva.value = 'productos'
+}
+
+const incluirTallaAlCapturarStock = (idTalla, stock) => {
+  if (stock === null || stock === undefined || stock === '') return
+
+  if (!tallasSeleccionadas.value.includes(idTalla)) {
+    tallasSeleccionadas.value.push(idTalla)
+  }
 }
 
 const onFileChange = (event) => {
