@@ -364,6 +364,17 @@ export const confirmPayment = async (req, res) => {
       return res.status(400).json({ message: 'Falta el identificador del pago' })
     }
 
+    const usuario = await prisma.usuario.findUnique({
+      where: { idUsuario: req.usuario.idUsuario },
+      select: { direccion: true }
+    })
+
+    if (!usuario?.direccion?.trim()) {
+      return res.status(400).json({
+        message: 'Debes registrar una dirección de entrega antes de pagar'
+      })
+    }
+
     const stripe = getStripe()
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
 

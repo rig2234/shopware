@@ -154,6 +154,97 @@
             Usa una tarjeta de prueba de Stripe. No se realizará un cargo real.
           </p>
 
+          <section class="mt-6 rounded-xl border border-gray-200 bg-[#fcfbf9] p-4">
+            <h3 class="text-sm font-bold text-gray-900">Dirección de entrega</h3>
+
+            <p v-if="cargandoDireccion" class="mt-3 text-sm text-gray-500" role="status">
+              Cargando tu dirección...
+            </p>
+
+            <template v-else>
+              <label for="direccion-pago" class="mt-3 block text-sm font-semibold text-gray-800">
+                Dirección (obligatoria)
+              </label>
+              <textarea
+                id="direccion-pago"
+                ref="direccionInput"
+                v-model="direccion"
+                name="direccion"
+                autocomplete="street-address"
+                maxlength="100"
+                rows="3"
+                required
+                placeholder="Calle, número, colonia y referencias"
+                class="mt-2 w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm text-gray-900 outline-none transition focus:border-[#c89456] focus:ring-2 focus:ring-[#d4a574]/30"
+                :aria-invalid="direccionInvalida"
+                @input="limpiarEstadoDireccion"
+              ></textarea>
+              <div class="mt-1 flex justify-between gap-3 text-xs text-gray-500">
+                <span>Máximo 100 caracteres.</span>
+                <span>{{ direccion.length }}/100</span>
+              </div>
+
+              <p v-if="!direccion.trim()" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="status">
+                No tienes una dirección registrada. Escríbela y guarda tu dirección antes de pagar.
+              </p>
+              <p v-if="errorDireccion" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+                {{ errorDireccion }}
+              </p>
+              <p v-if="mensajeDireccion" class="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700" role="status">
+                {{ mensajeDireccion }}
+              </p>
+
+              <button
+                type="button"
+                class="mt-3 w-full rounded-lg border border-[#d4a574] px-4 py-2 text-sm font-bold text-[#292521] disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="guardandoDireccion"
+                @click="guardarDireccion"
+              >
+                {{ guardandoDireccion ? 'Guardando...' : 'Guardar dirección' }}
+              </button>
+
+              <div class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <div class="p-3 pb-2">
+                  <h4 class="text-sm font-semibold text-gray-900">Referencia en el mapa</h4>
+                  <p class="mt-1 text-xs leading-5 text-gray-600">
+                    Selecciona un punto para completar automáticamente la dirección.
+                  </p>
+                </div>
+                <div
+                  ref="contenedorMapa"
+                  class="h-64 w-full bg-[#e8e5df]"
+                  role="region"
+                  aria-label="Mapa interactivo centrado en Culiacán, Sinaloa"
+                  tabindex="0"
+                ></div>
+                <div class="p-3 pt-2">
+                  <p v-if="coordenadasReferencia" class="text-xs text-gray-600" aria-live="polite">
+                    Punto de referencia: {{ coordenadasReferencia.lat }}, {{ coordenadasReferencia.lng }}
+                    <button
+                      type="button"
+                      class="ml-1 font-semibold text-[#8b5e34] underline underline-offset-2"
+                      @click="limpiarReferencia"
+                    >
+                      Quitar marca
+                    </button>
+                  </p>
+                  <p v-if="buscandoDireccionMapa" class="mt-2 text-xs text-gray-600" role="status">
+                    Buscando la dirección del punto seleccionado...
+                  </p>
+                  <p v-if="errorGeocodificacion" class="mt-2 text-xs text-amber-700" role="status">
+                    {{ errorGeocodificacion }}
+                  </p>
+                  <p v-if="errorMapa" class="mt-2 text-xs text-amber-700" role="status">
+                    {{ errorMapa }}
+                  </p>
+                  <p class="mt-2 text-[11px] leading-4 text-gray-500">
+                    © OpenStreetMap contributors
+                  </p>
+                </div>
+              </div>
+            </template>
+          </section>
+
           <label
             for="stripe-card"
             class="mb-2 mt-6 block text-sm font-semibold"
@@ -223,6 +314,11 @@
               {{ formatearPrecio(total) }}
             </span>
           </div>
+
+          <p class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-sm">
+            <span class="text-gray-600">Envío gratis</span>
+            <span class="font-bold text-green-700">Gratis</span>
+          </p>
         </aside>
       </section>
     </div>
@@ -233,6 +329,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { loadStripe } from '@stripe/stripe-js'
 import { useRoute, useRouter } from 'vue-router'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 const router = useRouter()
 const route = useRoute()
@@ -249,6 +347,19 @@ const carritoVacio = ref(false)
 const pagoCompletado = ref(false)
 const confirmarPendiente = ref(false)
 const cancelandoPedido = ref(false)
+const direccion = ref('')
+const direccionGuardada = ref('')
+const direccionInput = ref(null)
+const cargandoDireccion = ref(false)
+const guardandoDireccion = ref(false)
+const direccionInvalida = ref(false)
+const errorDireccion = ref('')
+const mensajeDireccion = ref('')
+const contenedorMapa = ref(null)
+const coordenadasReferencia = ref(null)
+const errorMapa = ref('')
+const buscandoDireccionMapa = ref(false)
+const errorGeocodificacion = ref('')
 
 const items = ref([])
 const total = ref(0)
@@ -264,6 +375,14 @@ const compraDirecta = Boolean(
 let stripe = null
 let elementoTarjeta = null
 let intervaloSeguimiento = null
+let mapaDireccion = null
+let marcadorDireccion = null
+let temporizadorGeocodificacion = null
+let controladorGeocodificacion = null
+let solicitudGeocodificacion = 0
+let ultimaSolicitudGeocodificacion = 0
+
+const centroCuliacan = [24.8091, -107.394]
 
 const etapasEnvio = ['Preparando', 'En camino', 'Entregado']
 
@@ -300,6 +419,256 @@ const formatearPrecio = (valor) => {
   }).format(Number.isFinite(numero) ? numero : 0)
 }
 
+const limpiarEstadoDireccion = () => {
+  direccionInvalida.value = false
+  errorDireccion.value = ''
+  mensajeDireccion.value = ''
+}
+
+const cargarDireccion = async (token) => {
+  cargandoDireccion.value = true
+  errorDireccion.value = ''
+
+  try {
+    const respuesta = await fetch(`${API_URL}/api/auth/profile`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      throw new Error(datos.message || 'No se pudo cargar tu dirección')
+    }
+
+    direccion.value = datos.direccion || ''
+    direccionGuardada.value = datos.direccion || ''
+  } catch (errorCapturado) {
+    errorDireccion.value =
+      errorCapturado.message || 'No se pudo cargar tu dirección'
+  } finally {
+    cargandoDireccion.value = false
+  }
+}
+
+const guardarDireccion = async () => {
+  limpiarEstadoDireccion()
+
+  if (!direccion.value.trim()) {
+    direccionInvalida.value = true
+    errorDireccion.value = 'Escribe una dirección válida.'
+    direccionInput.value?.focus()
+    return false
+  }
+
+  guardandoDireccion.value = true
+
+  try {
+    const token = localStorage.getItem('token')
+    const respuesta = await fetch(`${API_URL}/api/auth/profile/address`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ direccion: direccion.value })
+    })
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      throw new Error(datos.message || 'No se pudo guardar tu dirección')
+    }
+
+    direccion.value = datos.direccion
+    direccionGuardada.value = datos.direccion
+    mensajeDireccion.value = 'Dirección guardada correctamente.'
+    return true
+  } catch (errorCapturado) {
+    direccionInvalida.value = true
+    errorDireccion.value =
+      errorCapturado.message || 'No se pudo guardar tu dirección'
+    return false
+  } finally {
+    guardandoDireccion.value = false
+  }
+}
+
+const cancelarGeocodificacion = () => {
+  clearTimeout(temporizadorGeocodificacion)
+  temporizadorGeocodificacion = null
+  controladorGeocodificacion?.abort()
+  controladorGeocodificacion = null
+  solicitudGeocodificacion += 1
+  buscandoDireccionMapa.value = false
+}
+
+const limpiarReferencia = () => {
+  cancelarGeocodificacion()
+  marcadorDireccion?.remove()
+  marcadorDireccion = null
+  coordenadasReferencia.value = null
+}
+
+const formatearDireccion = (resultado) => {
+  const partesDireccion = resultado.address || {}
+  const calle = [
+    partesDireccion.house_number,
+    partesDireccion.road ||
+      partesDireccion.pedestrian ||
+      partesDireccion.residential ||
+      partesDireccion.footway
+  ].filter(Boolean).join(' ')
+  const colonia =
+    partesDireccion.suburb ||
+    partesDireccion.neighbourhood ||
+    partesDireccion.quarter ||
+    partesDireccion.city_district
+  const localidad =
+    partesDireccion.city ||
+    partesDireccion.town ||
+    partesDireccion.village ||
+    partesDireccion.municipality ||
+    partesDireccion.county
+  const partes = [calle, colonia, localidad, partesDireccion.state]
+    .filter(Boolean)
+    .filter((parte, indice, lista) => lista.indexOf(parte) === indice)
+
+  let direccionFormateada = ''
+  for (const parte of partes) {
+    direccionFormateada = direccionFormateada
+      ? `${direccionFormateada}, ${parte}`
+      : parte
+  }
+
+  return direccionFormateada ||
+    String(resultado.display_name || '').slice(0, 100)
+}
+
+const buscarDireccionDelPunto = ({ lat, lng }) => {
+  clearTimeout(temporizadorGeocodificacion)
+  controladorGeocodificacion?.abort()
+
+  const idSolicitud = ++solicitudGeocodificacion
+  const controlador = new AbortController()
+  controladorGeocodificacion = controlador
+  buscandoDireccionMapa.value = true
+  errorGeocodificacion.value = ''
+
+  const esperaMinima = Math.max(
+    0,
+    1000 - (Date.now() - ultimaSolicitudGeocodificacion)
+  )
+
+  temporizadorGeocodificacion = setTimeout(async () => {
+    temporizadorGeocodificacion = null
+    ultimaSolicitudGeocodificacion = Date.now()
+
+    try {
+      const parametros = new URLSearchParams({
+        format: 'jsonv2',
+        lat: String(lat),
+        lon: String(lng),
+        addressdetails: '1',
+        'accept-language': 'es'
+      })
+      const respuesta = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?${parametros}`,
+        { signal: controlador.signal }
+      )
+
+      if (!respuesta.ok) {
+        throw new Error('No se pudo obtener la dirección del punto.')
+      }
+
+      const resultado = await respuesta.json()
+      const direccionEncontrada = formatearDireccion(resultado)
+
+      if (!direccionEncontrada) {
+        throw new Error('No se encontró una dirección para este punto.')
+      }
+      if (idSolicitud !== solicitudGeocodificacion) return
+
+      direccion.value = direccionEncontrada
+      direccionInvalida.value = false
+      errorDireccion.value = ''
+      mensajeDireccion.value =
+        'Dirección completada desde el punto seleccionado. Guarda los cambios.'
+    } catch (errorCapturado) {
+      if (
+        errorCapturado.name === 'AbortError' ||
+        idSolicitud !== solicitudGeocodificacion
+      ) return
+
+      errorGeocodificacion.value =
+        errorCapturado.message || 'No se pudo obtener la dirección del punto.'
+    } finally {
+      if (idSolicitud === solicitudGeocodificacion) {
+        controladorGeocodificacion = null
+        buscandoDireccionMapa.value = false
+      }
+    }
+  }, esperaMinima)
+}
+
+const inicializarMapaDireccion = async () => {
+  await nextTick()
+
+  if (!contenedorMapa.value) return
+  if (mapaDireccion) {
+    mapaDireccion.invalidateSize()
+    return
+  }
+
+  try {
+    mapaDireccion = L.map(contenedorMapa.value, {
+      scrollWheelZoom: false
+    }).setView(centroCuliacan, 13)
+
+    const capa = L.tileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }
+    )
+
+    capa.on('tileerror', () => {
+      errorMapa.value =
+        'No se pudieron cargar algunas partes del mapa. Revisa tu conexión.'
+    })
+    capa.on('load', () => {
+      errorMapa.value = ''
+    })
+    capa.addTo(mapaDireccion)
+
+    mapaDireccion.on('click', (evento) => {
+      const { lat, lng } = evento.latlng
+      coordenadasReferencia.value = {
+        lat: lat.toFixed(5),
+        lng: lng.toFixed(5)
+      }
+
+      if (!marcadorDireccion) {
+        marcadorDireccion = L.circleMarker(evento.latlng, {
+          radius: 8,
+          color: '#ffffff',
+          weight: 2,
+          fillColor: '#a8733e',
+          fillOpacity: 1
+        }).addTo(mapaDireccion)
+      } else {
+        marcadorDireccion.setLatLng(evento.latlng)
+      }
+
+      buscarDireccionDelPunto({ lat, lng })
+    })
+  } catch (errorCapturado) {
+    console.error('Error al inicializar el mapa:', errorCapturado)
+    errorMapa.value = 'No se pudo inicializar el mapa.'
+    mapaDireccion?.remove()
+    mapaDireccion = null
+  }
+}
+
 const cargarPago = async () => {
   cargando.value = true
   error.value = ''
@@ -321,6 +690,8 @@ const cargarPago = async () => {
       await router.push('/login')
       return
     }
+
+    await cargarDireccion(token)
 
     if (!STRIPE_PUBLIC_KEY) {
       throw new Error(
@@ -431,6 +802,7 @@ const cargarPago = async () => {
 
     cargando.value = false
     await nextTick()
+    await inicializarMapaDireccion()
 
     const contenedorTarjeta = document.querySelector('#stripe-card')
 
@@ -610,6 +982,24 @@ const descargarFactura = async () => {
 const pagar = async () => {
   if (procesando.value) return
 
+  if (!direccion.value.trim()) {
+    direccionInvalida.value = true
+    mensajeError.value =
+      'No puedes continuar: registra una dirección de entrega antes de pagar.'
+    await nextTick()
+    direccionInput.value?.focus()
+    return
+  }
+
+  if (direccion.value.trim() !== direccionGuardada.value.trim()) {
+    const direccionGuardadaCorrectamente = await guardarDireccion()
+    if (!direccionGuardadaCorrectamente) {
+      mensajeError.value =
+        'Guarda tu dirección de entrega antes de continuar con el pago.'
+      return
+    }
+  }
+
   procesando.value = true
   mensajeError.value = ''
 
@@ -655,6 +1045,11 @@ const pagar = async () => {
 onMounted(cargarVista)
 
 onBeforeUnmount(() => {
+  cancelarGeocodificacion()
+  if (mapaDireccion) {
+    mapaDireccion.remove()
+    mapaDireccion = null
+  }
   if (intervaloSeguimiento) {
     clearInterval(intervaloSeguimiento)
     intervaloSeguimiento = null
