@@ -283,6 +283,33 @@
                   </template>
                 </Column>
 
+                <Column field="estado" header="Estado">
+                  <template #body="slotProps">
+                    <div class="flex flex-col gap-2">
+                      <span>{{ etiquetaEstadoPedido(slotProps.data.estado) }}</span>
+                      <select
+                        v-if="opcionesEstadoPedido(slotProps.data.estado).length"
+                        :value="slotProps.data.estado"
+                        :disabled="pedidoActualizandoEstado === slotProps.data.idPedido"
+                        class="rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-white disabled:opacity-60"
+                        :aria-label="`Actualizar estado del pedido ${slotProps.data.idPedido}`"
+                        @change="actualizarEstadoPedido(slotProps.data, $event.target.value)"
+                      >
+                        <option :value="slotProps.data.estado">
+                          {{ etiquetaEstadoPedido(slotProps.data.estado) }}
+                        </option>
+                        <option
+                          v-for="opcion in opcionesEstadoPedido(slotProps.data.estado)"
+                          :key="opcion.estado"
+                          :value="opcion.estado"
+                        >
+                          {{ opcion.etiqueta }}
+                        </option>
+                      </select>
+                    </div>
+                  </template>
+                </Column>
+
                 <Column field="total" header="Total">
                   <template #body="slotProps">
                     <span class="text-green-400 font-semibold">
@@ -1037,6 +1064,7 @@ const stockPorTalla = ref({})
 const pedidosRecientes = ref([])
 const roles = ref([])
 const facturaEnProceso = ref(null)
+const pedidoActualizandoEstado = ref(null)
 
 const facturas = computed(() => pedidos.value.flatMap((pedido) =>
   (pedido.facturas || []).map((factura) => ({ ...factura, pedido }))
@@ -1157,7 +1185,7 @@ const ventasMensuales = computed(() => {
   const totalesPorMes = new Map(meses.map((mes) => [mes.clave, 0]))
 
   for (const pedido of pedidos.value) {
-    if (!pedido.fechaPedido) continue
+    if (!pedido.fechaPedido || pedido.estado === 'CANCELADO') continue
 
     const fecha = new Date(pedido.fechaPedido)
     if (Number.isNaN(fecha.getTime())) continue
@@ -1182,6 +1210,8 @@ const productosMasVendidos = computed(() => {
   const cantidades = new Map()
 
   for (const pedido of pedidos.value) {
+    if (pedido.estado === 'CANCELADO') continue
+
     for (const detalle of pedido.detalles || []) {
       const nombre = detalle.producto?.nombre || 'Producto'
       const cantidad = Number(detalle.cantidad || 0)
@@ -1198,6 +1228,19 @@ const productosMasVendidos = computed(() => {
 
   return withRelativeBarWidth(productos, 'cantidad')
 })
+
+const etiquetaEstadoPedido = (estado) => ({
+  PREPARACION: 'En preparación',
+  EN_CAMINO: 'En camino',
+  ENTREGADO: 'Entregado',
+  CANCELACION_PENDIENTE: 'Cancelación en proceso',
+  CANCELADO: 'Cancelado'
+})[estado] || 'Sin estado'
+
+const opcionesEstadoPedido = (estado) => ({
+  PREPARACION: [{ estado: 'EN_CAMINO', etiqueta: 'En camino' }],
+  EN_CAMINO: [{ estado: 'ENTREGADO', etiqueta: 'Entregado' }]
+})[estado] || []
 
 const getImageUrl = (image) => {
   if (!image) return 'https://placehold.co/120x120/1f2937/f8fafc?text=No+Image'
@@ -1290,7 +1333,7 @@ const cargarPedidos = async () => {
     pedidosRecientes.value = pedidos.value.slice(0, 5)
     stats.value.pedidos = pedidos.value.length
     stats.value.ventas = pedidos.value.reduce(
-      (total, pedido) => total + Number(pedido.total || 0),
+      (total, pedido) => total + (pedido.estado === 'CANCELADO' ? 0 : Number(pedido.total || 0)),
       0
     )
   } catch (error) {
@@ -1308,6 +1351,45 @@ const cargarPedidos = async () => {
     })
   } finally {
     cargandoPedidos.value = false
+  }
+}
+
+const actualizarEstadoPedido = async (pedido, estado) => {
+  pedidoActualizandoEstado.value = pedido.idPedido
+
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`http://localhost:3000/api/orders/${pedido.idPedido}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : ''
+      },
+      body: JSON.stringify({ estado })
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.message || 'No se pudo actualizar el estado del pedido')
+    }
+
+    await cargarPedidos()
+    toast.add({
+      severity: 'success',
+      summary: 'Estado actualizado',
+      detail: `El pedido #${pedido.idPedido} ahora está ${etiquetaEstadoPedido(data.estado).toLowerCase()}.`,
+      life: 3000
+    })
+  } catch (error) {
+    console.error('Error actualizando estado del pedido:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo actualizar',
+      detail: error.message || 'No se pudo actualizar el estado del pedido.',
+      life: 3500
+    })
+  } finally {
+    pedidoActualizandoEstado.value = null
   }
 }
 

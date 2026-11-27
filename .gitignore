@@ -23,6 +23,7 @@
 
 # Archivos temporales y de configuración de Prisma
 **/prisma/migrations/**/*.sql
+!backend/prisma/migrations/**/migration.sql
 # Nota: NO ignores backend/prisma/schema.prisma, ese sí debe subirse.
 
 # Carpetas ocultas generadas por agentes de IA en tu proyecto

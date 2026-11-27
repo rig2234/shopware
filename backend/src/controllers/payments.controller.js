@@ -122,6 +122,7 @@ const asegurarFactura = async (pedido) => {
           productoTalla: { include: { talla: true } }
         }
       }
+
     }
   })
 
@@ -366,7 +367,8 @@ export const confirmPayment = async (req, res) => {
       const nuevoPedido = await tx.pedido.create({
         data: {
           idUsuario: pago.idUsuario,
-          total: pago.total
+          total: pago.total,
+          estado: 'PREPARACION'
         }
       })
 
@@ -491,7 +493,8 @@ export const getOrderTracking = async (req, res) => {
       },
       select: {
         idPedido: true,
-        fechaPedido: true
+        fechaPedido: true,
+        estado: true
       }
     })
 
@@ -514,6 +517,7 @@ export const getUserOrders = async (req, res) => {
         idPedido: true,
         fechaPedido: true,
         total: true,
+        estado: true,
         detalles: {
           select: {
             cantidad: true,
@@ -537,5 +541,139 @@ export const getUserOrders = async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo pedidos del usuario:', error)
     return res.status(500).json({ message: 'No se pudieron cargar tus pedidos' })
+  }
+}
+
+export const cancelOrder = async (req, res) => {
+  let idPedido
+  let estadoAnterior
+  let retomandoCancelacion = false
+  let reembolsoProcesado = false
+
+  try {
+    idPedido = Number(req.params.idPedido)
+    if (!Number.isInteger(idPedido) || idPedido <= 0) {
+      return res.status(400).json({ message: 'Pedido no válido' })
+    }
+
+    const pedido = await prisma.pedido.findFirst({
+      where: {
+        idPedido,
+        idUsuario: req.usuario.idUsuario
+      },
+      select: { estado: true }
+    })
+
+    if (!pedido) {
+      return res.status(404).json({ message: 'Pedido no encontrado' })
+    }
+    if (pedido.estado === 'CANCELADO') {
+      return res.status(409).json({ message: 'El pedido ya fue cancelado' })
+    }
+    if (pedido.estado === 'ENTREGADO') {
+      return res.status(409).json({ message: 'No se puede cancelar un pedido que ya fue entregado' })
+    }
+
+    if (pedido.estado !== 'CANCELACION_PENDIENTE') {
+      if (!['PREPARACION', 'EN_CAMINO'].includes(pedido.estado)) {
+        return res.status(409).json({ message: 'El pedido no se puede cancelar en su estado actual' })
+      }
+
+      estadoAnterior = pedido.estado
+      const reservaCancelacion = await prisma.pedido.updateMany({
+        where: {
+          idPedido,
+          idUsuario: req.usuario.idUsuario,
+          estado: pedido.estado
+        },
+        data: { estado: 'CANCELACION_PENDIENTE' }
+      })
+
+      if (!reservaCancelacion.count) {
+        return res.status(409).json({ message: 'El estado del pedido cambió; actualiza la página e inténtalo de nuevo' })
+      }
+    } else {
+      retomandoCancelacion = true
+    }
+
+    const pago = await prisma.pagoPendiente.findFirst({
+      where: {
+        idPedido,
+        idUsuario: req.usuario.idUsuario,
+        estado: 'PAID'
+      }
+    })
+
+    if (!pago) {
+      if (!retomandoCancelacion) {
+        await prisma.pedido.updateMany({
+          where: { idPedido, estado: 'CANCELACION_PENDIENTE' },
+          data: { estado: estadoAnterior }
+        })
+      }
+      return res.status(409).json({ message: 'No se encontró el pago confirmado para reembolsar este pedido' })
+    }
+
+    const stripe = getStripe()
+    await stripe.refunds.create(
+      { payment_intent: pago.stripePaymentIntentId },
+      { idempotencyKey: `cancelar-pedido-${idPedido}` }
+    )
+    reembolsoProcesado = true
+
+    await prisma.$transaction(async (tx) => {
+      const cancelacion = await tx.pedido.updateMany({
+        where: {
+          idPedido,
+          idUsuario: req.usuario.idUsuario,
+          estado: 'CANCELACION_PENDIENTE'
+        },
+        data: { estado: 'CANCELADO' }
+      })
+
+      if (!cancelacion.count) {
+        const pedidoActual = await tx.pedido.findUnique({
+          where: { idPedido },
+          select: { estado: true }
+        })
+        if (pedidoActual?.estado === 'CANCELADO') return
+        throw new Error('El pedido cambió antes de completar la cancelación')
+      }
+
+      const detalles = await tx.detallePedido.findMany({
+        where: { idPedido },
+        select: { idProductoTalla: true, cantidad: true }
+      })
+
+      for (const detalle of detalles) {
+        await tx.productoTalla.update({
+          where: { idProductoTalla: detalle.idProductoTalla },
+          data: { stock: { increment: detalle.cantidad || 0 } }
+        })
+      }
+
+      await tx.pagoPendiente.update({
+        where: { idPagoPendiente: pago.idPagoPendiente },
+        data: { estado: 'REFUNDED' }
+      })
+    })
+
+    return res.json({ message: 'Pedido cancelado; el reembolso fue solicitado y el inventario fue restaurado' })
+  } catch (error) {
+    console.error('Error cancelando pedido:', error)
+    if (idPedido && estadoAnterior && !retomandoCancelacion && !reembolsoProcesado) {
+      await prisma.pedido.updateMany({
+        where: { idPedido, estado: 'CANCELACION_PENDIENTE' },
+        data: { estado: estadoAnterior }
+      }).catch((rollbackError) => {
+        console.error('Error restaurando el estado del pedido:', rollbackError)
+      })
+    }
+
+    return res.status(500).json({
+      message: reembolsoProcesado
+        ? 'El reembolso se procesó, pero la cancelación quedó pendiente. Intenta nuevamente para completar la actualización del inventario.'
+        : 'No se pudo cancelar el pedido ni procesar el reembolso'
+    })
   }
 }

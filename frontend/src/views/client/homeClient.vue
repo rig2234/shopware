@@ -396,22 +396,22 @@
                     <p class="mt-1 text-xs text-gray-500">{{ formatearFechaPedido(pedido.fechaPedido) }}</p>
                   </div>
                   <span class="shrink-0 rounded-full bg-[#f8f1e9] px-2.5 py-1 text-xs font-semibold text-[#8b633d]">
-                    {{ estadoEnvioPedido(pedido.fechaPedido) }}
+                    {{ estadoEnvioPedido(pedido.estado) }}
                   </span>
                 </div>
 
-                <div class="mt-4">
+                <div v-if="!['CANCELADO', 'CANCELACION_PENDIENTE'].includes(pedido.estado)" class="mt-4">
                   <div class="h-1.5 overflow-hidden rounded-full bg-gray-100">
                     <div
                       class="h-full rounded-full bg-[#a8733e] transition-[width] duration-700"
-                      :style="{ width: `${progresoEnvioPedido(pedido.fechaPedido)}%` }"
+                      :style="{ width: `${progresoEnvioPedido(pedido.estado)}%` }"
                     ></div>
                   </div>
                   <ol class="mt-2 grid grid-cols-3 text-center text-[0.65rem] font-medium">
                     <li
                       v-for="(etapa, indice) in etapasEnvio"
                       :key="etapa"
-                      :class="indice + 1 <= pasoEnvioPedido(pedido.fechaPedido) ? 'text-[#8b6847]' : 'text-gray-400'"
+                      :class="indice + 1 <= pasoEnvioPedido(pedido.estado) ? 'text-[#8b6847]' : 'text-gray-400'"
                     >
                       {{ etapa }}
                     </li>
@@ -429,14 +429,28 @@
 
                 <div class="mt-3 flex items-center justify-between gap-3">
                   <p class="text-sm font-bold text-[#8b6847]">${{ formatPrice(pedido.total) }}</p>
-                  <router-link
-                    :to="{ name: 'Pago', query: { pedido: String(pedido.idPedido) } }"
-                    class="text-sm font-semibold text-[#8b6847] underline decoration-[#d4a574] underline-offset-2 hover:text-[#a8733e]"
-                    @click="cerrarSidebar"
-                  >
-                    Ver seguimiento
-                  </router-link>
+                  <div class="flex flex-wrap items-center justify-end gap-3">
+                    <router-link
+                      :to="{ name: 'Pago', query: { pedido: String(pedido.idPedido) } }"
+                      class="text-sm font-semibold text-[#8b6847] underline decoration-[#d4a574] underline-offset-2 hover:text-[#a8733e]"
+                      @click="cerrarSidebar"
+                    >
+                      Ver seguimiento
+                    </router-link>
+                    <button
+                      v-if="['PREPARACION', 'EN_CAMINO', 'CANCELACION_PENDIENTE'].includes(pedido.estado)"
+                      type="button"
+                      class="text-sm font-semibold text-red-700 underline underline-offset-2 disabled:cursor-wait disabled:opacity-60"
+                      :disabled="pedidoEnCancelacion === pedido.idPedido"
+                      @click="cancelarPedido(pedido)"
+                    >
+                      {{ pedidoEnCancelacion === pedido.idPedido ? 'Cancelando...' : 'Cancelar pedido' }}
+                    </button>
+                  </div>
                 </div>
+                <p v-if="errorCancelacionPedido.id === pedido.idPedido" class="mt-2 text-sm text-red-700" role="alert">
+                  {{ errorCancelacionPedido.mensaje }}
+                </p>
               </article>
             </div>
           </section>
@@ -751,7 +765,8 @@ const pedidos = ref([])
 const cargandoPedidos = ref(false)
 const pedidosCargados = ref(false)
 const errorPedidos = ref('')
-const tiempoActualPedidos = ref(Date.now())
+const pedidoEnCancelacion = ref(null)
+const errorCancelacionPedido = ref({ id: null, mensaje: '' })
 const contenedorMapa = ref(null)
 const coordenadasReferencia = ref(null)
 const errorMapa = ref('')
@@ -765,7 +780,6 @@ let temporizadorGeocodificacion = null
 let controladorGeocodificacion = null
 let solicitudGeocodificacion = 0
 let ultimaSolicitudGeocodificacion = 0
-let intervaloPedidos = null
 
 const etapasEnvio = ['Preparando', 'En camino', 'Entregado']
 
@@ -838,7 +852,7 @@ const abrirSeccionPedidos = () => {
   seccionSidebar.value = 'pedidos'
   sidebarAbierta.value = true
 
-  if (estaAutenticado.value && !pedidosCargados.value) {
+  if (estaAutenticado.value) {
     cargarPedidos()
   }
 }
@@ -871,24 +885,55 @@ const cargarPedidos = async () => {
   }
 }
 
-const pasoEnvioPedido = (fechaPedido) => {
-  const timestamp = Date.parse(fechaPedido)
-  const segundos = Number.isFinite(timestamp)
-    ? Math.max(0, Math.floor((tiempoActualPedidos.value - timestamp) / 1000))
-    : 0
+const pasoEnvioPedido = (estado) =>
+  ({ PREPARACION: 1, EN_CAMINO: 2, ENTREGADO: 3 })[estado] || 0
 
-  if (segundos < 10) return 1
-  if (segundos < 70) return 2
-  return 3
+const estadoEnvioPedido = (estado) => ({
+  PREPARACION: 'Pedido en preparación',
+  EN_CAMINO: 'Pedido en camino',
+  ENTREGADO: 'Pedido entregado',
+  CANCELACION_PENDIENTE: 'Cancelación en proceso',
+  CANCELADO: 'Pedido cancelado'
+})[estado] || 'Estado no disponible'
+
+const progresoEnvioPedido = (estado) =>
+  ({ PREPARACION: 15, EN_CAMINO: 65, ENTREGADO: 100 })[estado] || 0
+
+const cancelarPedido = async (pedido) => {
+  if (!window.confirm(`¿Deseas cancelar el pedido #${pedido.idPedido}? Se solicitará el reembolso.`)) {
+    return
+  }
+
+  pedidoEnCancelacion.value = pedido.idPedido
+  errorCancelacionPedido.value = { id: null, mensaje: '' }
+
+  try {
+    const response = await fetch(
+      `http://localhost:3000/api/payments/orders/${pedido.idPedido}/cancel`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'No se pudo cancelar el pedido')
+    }
+
+    await cargarPedidos()
+  } catch (error) {
+    console.error('Error al cancelar el pedido:', error)
+    errorCancelacionPedido.value = {
+      id: pedido.idPedido,
+      mensaje: error.message || 'No se pudo cancelar el pedido'
+    }
+  } finally {
+    pedidoEnCancelacion.value = null
+  }
 }
-
-const estadoEnvioPedido = (fechaPedido) =>
-  ['Pedido en preparación', 'Pedido en camino', 'Pedido entregado'][
-    pasoEnvioPedido(fechaPedido) - 1
-  ]
-
-const progresoEnvioPedido = (fechaPedido) =>
-  [15, 65, 100][pasoEnvioPedido(fechaPedido) - 1]
 
 const formatearFechaPedido = (fechaPedido) => {
   if (!fechaPedido) return 'Fecha no disponible'
@@ -1434,10 +1479,6 @@ const cerrarSesion = () => {
 }
 
 onMounted(() => {
-  intervaloPedidos = setInterval(() => {
-    tiempoActualPedidos.value = Date.now()
-  }, 1000)
-
   try {
     const usuarioGuardado = localStorage.getItem('usuario')
     usuario.value = usuarioGuardado ? JSON.parse(usuarioGuardado) : null
@@ -1468,10 +1509,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (intervaloPedidos) {
-    clearInterval(intervaloPedidos)
-    intervaloPedidos = null
-  }
   cancelarGeocodificacion()
   mapaDireccion?.remove()
   mapaDireccion = null

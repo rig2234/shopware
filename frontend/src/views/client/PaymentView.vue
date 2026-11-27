@@ -56,7 +56,7 @@
         </p>
 
         <section
-          v-if="fechaPedido"
+          v-if="estadoPedido"
           class="mx-auto mt-8 max-w-xl rounded-2xl border border-[#eee7de] bg-[#fbf9f6] p-5 text-left sm:p-6"
           aria-live="polite"
         >
@@ -67,7 +67,7 @@
             </span>
           </div>
 
-          <div class="mt-6">
+          <div v-if="!['CANCELADO', 'CANCELACION_PENDIENTE'].includes(estadoPedido)" class="mt-6">
             <div class="h-2 overflow-hidden rounded-full bg-[#e8e1d8]">
               <div
                 class="h-full rounded-full bg-[#a8733e] transition-[width] duration-700"
@@ -97,8 +97,17 @@
             {{ descripcionEstadoEnvio }}
           </p>
           <p class="mt-2 text-xs text-gray-400">
-            El estado se actualiza automáticamente en esta pantalla.
+            El estado se actualiza al avanzar la preparación y el envío.
           </p>
+          <button
+            v-if="['PREPARACION', 'EN_CAMINO', 'CANCELACION_PENDIENTE'].includes(estadoPedido)"
+            type="button"
+            class="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
+            :disabled="cancelandoPedido"
+            @click="cancelarPedido"
+          >
+            {{ cancelandoPedido ? 'Cancelando pedido...' : 'Cancelar pedido' }}
+          </button>
         </section>
 
         <button
@@ -239,12 +248,12 @@ const errorTarjeta = ref('')
 const carritoVacio = ref(false)
 const pagoCompletado = ref(false)
 const confirmarPendiente = ref(false)
+const cancelandoPedido = ref(false)
 
 const items = ref([])
 const total = ref(0)
 const idPedido = ref('')
-const fechaPedido = ref('')
-const tiempoActual = ref(Date.now())
+const estadoPedido = ref('')
 const paymentIntentId = ref('')
 const clientSecret = ref('')
 
@@ -258,30 +267,27 @@ let intervaloSeguimiento = null
 
 const etapasEnvio = ['Preparando', 'En camino', 'Entregado']
 
-const segundosDesdePedido = computed(() => {
-  const timestamp = Date.parse(fechaPedido.value)
-  return Number.isFinite(timestamp)
-    ? Math.max(0, Math.floor((tiempoActual.value - timestamp) / 1000))
-    : 0
-})
+const pasoEnvio = computed(() =>
+  ({ PREPARACION: 1, EN_CAMINO: 2, ENTREGADO: 3 })[estadoPedido.value] || 0
+)
 
-const pasoEnvio = computed(() => {
-  if (segundosDesdePedido.value < 10) return 1
-  if (segundosDesdePedido.value < 70) return 2
-  return 3
-})
+const progresoEnvio = computed(() =>
+  ({ PREPARACION: 15, EN_CAMINO: 65, ENTREGADO: 100 })[estadoPedido.value] || 0
+)
 
-const progresoEnvio = computed(() => [15, 65, 100][pasoEnvio.value - 1])
-
-const textoEstadoEnvio = computed(() => [
-  'Pedido en preparación',
-  'Pedido en camino',
-  'Pedido entregado'
-][pasoEnvio.value - 1])
+const textoEstadoEnvio = computed(() => ({
+  PREPARACION: 'Pedido en preparación',
+  EN_CAMINO: 'Pedido en camino',
+  ENTREGADO: 'Pedido entregado',
+  CANCELACION_PENDIENTE: 'Cancelación en proceso',
+  CANCELADO: 'Pedido cancelado'
+})[estadoPedido.value] || 'Estado no disponible')
 
 const descripcionEstadoEnvio = computed(() => {
-  if (pasoEnvio.value === 1) return 'Estamos preparando tu pedido.'
-  if (pasoEnvio.value === 2) return 'Tu pedido va en camino.'
+  if (estadoPedido.value === 'CANCELADO') return 'El pedido fue cancelado y se solicitó el reembolso.'
+  if (estadoPedido.value === 'CANCELACION_PENDIENTE') return 'Estamos procesando la cancelación y el reembolso.'
+  if (estadoPedido.value === 'PREPARACION') return 'Estamos preparando tu pedido.'
+  if (estadoPedido.value === 'EN_CAMINO') return 'Tu pedido va en camino.'
   return 'Tu pedido ha llegado.'
 })
 
@@ -465,6 +471,19 @@ const cargarPago = async () => {
   }
 }
 
+const obtenerSeguimientoPedido = async (id) => {
+  const token = localStorage.getItem('token')
+  const respuesta = await fetch(`${API_URL}/api/payments/orders/${id}/tracking`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  const pedido = await respuesta.json()
+
+  if (!respuesta.ok) {
+    throw new Error(pedido.message || 'No se pudo cargar el seguimiento')
+  }
+  estadoPedido.value = pedido.estado
+}
+
 const cargarSeguimiento = async (id) => {
   cargando.value = true
   error.value = ''
@@ -476,30 +495,48 @@ const cargarSeguimiento = async (id) => {
   }
 
   try {
-    const token = localStorage.getItem('token')
-    const respuesta = await fetch(
-      `${API_URL}/api/payments/orders/${id}/tracking`,
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    )
-    const pedido = await respuesta.json()
-
-    if (!respuesta.ok) {
-      throw new Error(pedido.message || 'No se pudo cargar el seguimiento')
-    }
-
-    idPedido.value = pedido.idPedido
-    fechaPedido.value = pedido.fechaPedido
-    tiempoActual.value = Date.now()
+    await obtenerSeguimientoPedido(id)
+    idPedido.value = id
     pagoCompletado.value = true
     intervaloSeguimiento = setInterval(() => {
-      tiempoActual.value = Date.now()
-    }, 1000)
+      obtenerSeguimientoPedido(id).catch((errorCapturado) => {
+        console.error('Error actualizando el seguimiento:', errorCapturado)
+      })
+    }, 15000)
   } catch (errorCapturado) {
     error.value = errorCapturado.message || 'No se pudo cargar el seguimiento'
   } finally {
     cargando.value = false
+  }
+}
+
+const cancelarPedido = async () => {
+  if (!window.confirm(`¿Deseas cancelar el pedido #${idPedido.value}? Se solicitará el reembolso.`)) {
+    return
+  }
+
+  cancelandoPedido.value = true
+  mensajeError.value = ''
+
+  try {
+    const respuesta = await fetch(
+      `${API_URL}/api/payments/orders/${idPedido.value}/cancel`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      }
+    )
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      throw new Error(datos.message || 'No se pudo cancelar el pedido')
+    }
+
+    estadoPedido.value = 'CANCELADO'
+  } catch (errorCapturado) {
+    mensajeError.value = errorCapturado.message || 'No se pudo cancelar el pedido'
+  } finally {
+    cancelandoPedido.value = false
   }
 }
 
