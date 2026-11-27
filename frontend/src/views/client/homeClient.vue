@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen bg-[#f8f8f8] font-sans text-[#333333]">
-    <nav class="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-md">
+    <nav class="sticky top-0 z-50 border-b border-black/5 bg-white/95 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <div class="mx-auto max-w-7xl px-6 py-4">
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex-shrink-0 text-3xl font-bold text-[#d4a574]">
+          <div class="flex-shrink-0 text-3xl font-bold tracking-tight text-[#d4a574]">
             Shopware
           </div>
 
@@ -111,21 +111,21 @@
       </div>
     </nav>
 
-    <section class="relative overflow-hidden bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] px-6 py-24 text-white">
+    <section class="relative overflow-hidden bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] px-6 py-16 text-white sm:py-20">
       <div class="absolute inset-0 opacity-10">
         <div class="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#d4a574] blur-3xl"></div>
         <div class="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-[#d4a574] blur-3xl"></div>
       </div>
 
-      <div class="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
+      <div class="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-between gap-10 md:flex-row">
         <div class="flex-1">
-          <div class="mb-4 inline-block rounded-full bg-[#d4a574] px-4 py-1 text-sm font-bold text-black">
+          <div class="mb-5 inline-flex items-center rounded-full border border-[#d4a574]/30 bg-[#d4a574]/15 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#edc99f]">
             ✨ Nuevo Estilo
           </div>
-          <h1 class="mb-6 text-5xl font-bold leading-tight md:text-6xl">
+          <h1 class="mb-6 max-w-xl text-5xl font-bold leading-[1.05] md:text-6xl">
             Estilo que te <span class="text-[#d4a574]">define</span>
           </h1>
-          <p class="mb-8 text-lg leading-relaxed text-gray-300">
+          <p class="mb-8 max-w-xl text-lg leading-relaxed text-gray-300">
             Descubre la mejor colección de ropa casual y cómoda. Diseño moderno, calidad premium y envío rápido a todo el país.
           </p>
           <div class="flex flex-wrap gap-4">
@@ -145,7 +145,7 @@
           </div>
         </div>
 
-        <div class="flex-1 text-center">
+        <div class="flex-1">
           <div class="relative">
             <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#d4a574] to-transparent opacity-20 blur-2xl"></div>
             <div class="relative flex h-96 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-400 to-gray-500 shadow-2xl">
@@ -581,61 +581,54 @@
           <article
             v-for="producto in productosFiltrados"
             :key="producto.idProducto"
-            class="group flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+            class="group flex flex-col overflow-hidden rounded-2xl border border-[#eee8df] bg-white shadow-[0_12px_35px_-20px_rgba(60,45,30,0.35)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#dcc39f] hover:shadow-[0_20px_45px_-20px_rgba(60,45,30,0.38)]"
           >
-            <div class="relative h-64 overflow-hidden bg-gray-200">
+            <div class="relative aspect-[4/5] overflow-hidden bg-[#f2eee7]">
               <img
                 :src="urlImagen(producto.imagen)"
                 :alt="producto.nombre || 'Producto Shopware'"
-                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
               />
 
               <span
                 v-if="Number(producto.descuento) > 0"
-                class="absolute right-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white"
+                class="absolute right-3 top-3 rounded-full bg-[#1a1a1a] px-3 py-1.5 text-xs font-bold text-white shadow-md"
               >
                 -{{ producto.descuento }}%
               </span>
             </div>
 
-            <div class="flex flex-grow flex-col p-4">
-              <p class="mb-1 text-xs text-gray-500">
+            <div class="flex flex-grow flex-col p-5">
+              <p class="mb-2 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[#a8733e]">
                 {{ nombreCategoriaProducto(producto) }}
               </p>
-              <h4 class="mb-3 truncate text-lg font-bold text-[#1a1a1a]">
+              <h4 class="mb-4 min-h-12 text-base font-bold leading-6 text-[#1a1a1a]">
                 {{ producto.nombre }}
               </h4>
 
-              <div class="mb-4">
-                <p class="text-2xl font-bold text-[#d4a574]">
+              <div class="mb-5 flex min-h-12 items-end gap-3">
+                <p class="text-2xl font-bold tracking-tight text-[#1a1a1a]">
                   ${{ formatPrice(precioFinal(producto)) }}
                 </p>
                 <p
                   v-if="Number(producto.descuento) > 0"
-                  class="text-sm text-gray-400 line-through"
+                  class="pb-0.5 text-sm text-gray-400 line-through"
                 >
                   ${{ formatPrice(producto.precio) }}
                 </p>
               </div>
 
-              <div class="mt-auto flex gap-2">
+              <div class="mt-auto">
                 <button
-  type="button"
-  @click="abrirProducto(producto)"
-  class="flex-1 rounded-lg bg-[#1a1a1a] py-2 text-sm font-semibold text-white hover:bg-[#d4a574] hover:text-[#1a1a1a]"
->
-  Elegir talla
-</button>
-
-                <button
-  type="button"
-  @click="abrirProducto(producto)"
-  class="rounded-lg border-2 border-gray-300 px-3 py-2 hover:border-[#d4a574] hover:text-[#d4a574]"
-  title="Ver producto"
-  aria-label="Ver producto"
->
-  <!-- Conserva aquí el SVG del botón actual -->
-</button>
+                  type="button"
+                  @click="abrirProducto(producto)"
+                  class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] px-4 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-[#a8733e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574] focus-visible:ring-offset-2"
+                >
+                  <span>Elegir talla</span>
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
             </div>
           </article>
@@ -655,7 +648,7 @@
       </div>
     </section>
 
-    <section class="my-12 bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] px-6 py-16 text-white">
+    <section class="mt-12 bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] px-6 py-16 text-white">
       <div class="mx-auto max-w-2xl text-center">
         <h2 class="mb-4 text-3xl font-bold">Suscríbete a Nuestro Newsletter</h2>
         <p class="mb-8 text-gray-300">

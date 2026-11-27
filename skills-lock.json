@@ -7,6 +7,20 @@
       "sourceType": "github",
       "skillPath": "skills/modern-web-guidance/SKILL.md",
       "computedHash": "d9f3ceba8b5c77b12ae6f852932a349843ce086d03ce76ab5e2257e7e5acd16d"
+    },
+    "vue": {
+      "source": "antfu/skills",
+      "commit": "0ecc25a6dcc805074133f7315fb6965450c70990",
+      "sourceType": "github",
+      "skillPath": "skills/vue/SKILL.md",
+      "computedHash": "973126c2d026d971177def462808c99b65965b3f88e6769282aa300c214af66f"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "5994e4cfd86144903d2ba750f862b9e36af15e3297aac983679e347b99f6cb71"
     }
   }
 }
