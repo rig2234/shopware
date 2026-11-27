@@ -164,6 +164,54 @@ const calcularPrecioFinal = (producto) => {
   return Number((precio * (1 - descuento / 100)).toFixed(2))
 }
 
+const actualizarEstadoSimulado = async (pedido) => {
+  if (
+    !pedido.fechaPedido ||
+    !['PREPARACION', 'EN_CAMINO'].includes(pedido.estado)
+  ) {
+    return pedido
+  }
+
+  const tiempoTranscurrido = Date.now() - new Date(pedido.fechaPedido).getTime()
+  if (!Number.isFinite(tiempoTranscurrido) || tiempoTranscurrido < 30_000) {
+    return pedido
+  }
+
+  const estadoSimulado = tiempoTranscurrido >= 60_000
+    ? 'ENTREGADO'
+    : 'EN_CAMINO'
+
+  if (pedido.estado === estadoSimulado) return pedido
+
+  const actualizacion = await prisma.pedido.updateMany({
+    where: {
+      idPedido: pedido.idPedido,
+      idUsuario: pedido.idUsuario,
+      estado: pedido.estado
+    },
+    data: { estado: estadoSimulado }
+  })
+
+  if (actualizacion.count) {
+    return { ...pedido, estado: estadoSimulado }
+  }
+
+  const pedidoActualizado = await prisma.pedido.findFirst({
+    where: {
+      idPedido: pedido.idPedido,
+      idUsuario: pedido.idUsuario
+    },
+    select: {
+      idPedido: true,
+      idUsuario: true,
+      fechaPedido: true,
+      estado: true
+    }
+  })
+
+  return pedidoActualizado || pedido
+}
+
 export const createPaymentIntent = async (req, res) => {
   try {
     const idUsuario = req.usuario.idUsuario
@@ -502,7 +550,8 @@ export const getOrderTracking = async (req, res) => {
       return res.status(404).json({ message: 'Pedido no encontrado' })
     }
 
-    return res.json(pedido)
+    const pedidoActualizado = await actualizarEstadoSimulado(pedido)
+    return res.json(pedidoActualizado)
   } catch (error) {
     console.error('Error obteniendo seguimiento del pedido:', error)
     return res.status(500).json({ message: 'No se pudo obtener el seguimiento del pedido' })

@@ -96,8 +96,8 @@
           <p class="mt-5 text-sm text-gray-600">
             {{ descripcionEstadoEnvio }}
           </p>
-          <p class="mt-2 text-xs text-gray-400">
-            El estado se actualiza al avanzar la preparación y el envío.
+          <p v-if="['PREPARACION', 'EN_CAMINO'].includes(estadoPedido)" class="mt-2 text-xs text-gray-500">
+            En esta simulación, el pedido se entregará aproximadamente un minuto después de confirmar el pago.
           </p>
           <button
             v-if="['PREPARACION', 'EN_CAMINO', 'CANCELACION_PENDIENTE'].includes(estadoPedido)"
@@ -498,11 +498,17 @@ const cargarSeguimiento = async (id) => {
     await obtenerSeguimientoPedido(id)
     idPedido.value = id
     pagoCompletado.value = true
-    intervaloSeguimiento = setInterval(() => {
-      obtenerSeguimientoPedido(id).catch((errorCapturado) => {
+    intervaloSeguimiento = setInterval(async () => {
+      try {
+        await obtenerSeguimientoPedido(id)
+        if (['ENTREGADO', 'CANCELADO'].includes(estadoPedido.value)) {
+          clearInterval(intervaloSeguimiento)
+          intervaloSeguimiento = null
+        }
+      } catch (errorCapturado) {
         console.error('Error actualizando el seguimiento:', errorCapturado)
-      })
-    }, 15000)
+      }
+    }, 1000)
   } catch (errorCapturado) {
     error.value = errorCapturado.message || 'No se pudo cargar el seguimiento'
   } finally {
